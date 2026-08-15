@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Machine Learning
+*.keras
+*.h5
+*.npz
+*.npy
+*.pkl
+
+# Dataset
+data/
+datasets/
+
+# Environment
+.env
+venv/
+.venv/
+
+# Google Colab
+/content/
+
+# OS
+.DS_Store
+Thumbs.db

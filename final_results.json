@@ -1,0 +1,31 @@
+{
+    "project": "Music Genre Classification using CNN",
+    "dataset": "GTZAN Genre Collection",
+    "models": {
+        "CNN_V1": {
+            "segment_accuracy": 0.7338
+        },
+        "CNN_V2": {
+            "segment_accuracy": 0.8158,
+            "song_accuracy": 0.8667
+        },
+        "CNN_V3": {
+            "segment_accuracy": 0.8325550556182861,
+            "song_accuracy": 0.9
+        }
+    },
+    "final_model": "CNN_V3",
+    "final_song_accuracy": 0.9,
+    "genres": [
+        "blues",
+        "classical",
+        "country",
+        "disco",
+        "hiphop",
+        "jazz",
+        "metal",
+        "pop",
+        "reggae",
+        "rock"
+    ]
+}
