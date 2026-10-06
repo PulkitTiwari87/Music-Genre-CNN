@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .predict import load_model, predict_song
@@ -40,6 +41,15 @@ def create_app(model_path=None):
         yield
 
     app = FastAPI(title="Music Genre CNN", lifespan=lifespan)
+
+    # Only needed when the UI is hosted on a different origin (e.g. Vercel + Render).
+    origins = [
+        o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
+    ]
+    if origins:
+        app.add_middleware(
+            CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"]
+        )
 
     def classify(data: bytes):
         try:

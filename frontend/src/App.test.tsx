@@ -107,4 +107,16 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /predict genre/i })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("posts to VITE_API_URL when the API is hosted separately", async () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com/");
+    vi.resetModules();
+    const { predictGenre } = await import("./api");
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(prediction), { status: 200 }));
+
+    await predictGenre(audio());
+
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/api/predict");
+    vi.unstubAllEnvs();
+  });
 });

@@ -1156,7 +1156,18 @@ The service decodes uploads in memory (nothing is written to disk). Authenticati
 | Variable | Default | Purpose |
 |---|---|---|
 | `MODEL_PATH` | `models/music_genre_cnn_final_v3.keras` | Model file to serve |
-| `PORT` | `8000` | Port used by the Docker image |
+| `PORT` | `8000` | Port used by the Docker image (Render sets its own) |
+| `CORS_ORIGINS` | *(unset)* | Comma-separated UI origins allowed to call the API. Only needed when the UI is hosted elsewhere. |
+| `VITE_API_URL` | *(unset)* | Build-time, frontend only: base URL of the API (e.g. `https://my-api.onrender.com`). Unset = same origin. |
+
+## Deployment (Render + Vercel)
+
+TensorFlow is far too large for a Vercel function, so the API runs on **Render** (from the `Dockerfile`) and the static UI runs on **Vercel** (root directory `frontend`):
+
+1. Render web service (Docker): set `CORS_ORIGINS` to the Vercel URL.
+2. Vercel project: set `VITE_API_URL` to the Render URL, then redeploy.
+
+The free Render plan has 512 MB RAM, which may be too little for TensorFlow, and it sleeps after 15 minutes idle (the first request then takes about a minute).
 
 ## Docker
 

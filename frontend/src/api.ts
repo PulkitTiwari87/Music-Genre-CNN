@@ -10,13 +10,16 @@ export interface Prediction {
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 export const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".flac", ".ogg"];
 
+/** Empty = same origin (FastAPI serves the UI or Vite proxies /api). Set VITE_API_URL when hosted separately. */
+const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+
 export async function predictGenre(file: File, signal?: AbortSignal): Promise<Prediction> {
   const body = new FormData();
   body.append("file", file);
 
   let response: Response;
   try {
-    response = await fetch("/api/predict", { method: "POST", body, signal });
+    response = await fetch(`${API_BASE}/api/predict`, { method: "POST", body, signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new Error("Could not reach the server. Is the API running?", { cause: error });

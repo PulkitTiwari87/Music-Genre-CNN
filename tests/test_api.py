@@ -54,6 +54,24 @@ def test_oversized_upload_rejected(client, monkeypatch):
     assert post(client, b"\0" * 2048).status_code == 413
 
 
+def test_cors_allows_only_configured_origin(stub_model_path, monkeypatch):
+    monkeypatch.setenv(
+        "CORS_ORIGINS", "https://ui.example.com, https://other.example.com"
+    )
+    with TestClient(api.create_app(stub_model_path)) as c:
+        allowed = c.get("/api/health", headers={"Origin": "https://ui.example.com"})
+        assert (
+            allowed.headers["access-control-allow-origin"] == "https://ui.example.com"
+        )
+        denied = c.get("/api/health", headers={"Origin": "https://evil.example.com"})
+        assert "access-control-allow-origin" not in denied.headers
+
+
+def test_no_cors_headers_by_default(client):
+    response = client.get("/api/health", headers={"Origin": "https://ui.example.com"})
+    assert "access-control-allow-origin" not in response.headers
+
+
 def test_model_missing_gives_503(tmp_path):
     with TestClient(api.create_app(tmp_path / "missing.keras")) as c:
         assert c.get("/api/health").status_code == 503
