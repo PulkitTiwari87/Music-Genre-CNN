@@ -6,7 +6,7 @@
             "segment_accuracy": 0.7338
         },
         "CNN_V2": {
-            "segment_accuracy": 0.8158,
+            "segment_accuracy": 0.8185456991195679,
             "song_accuracy": 0.8667
         },
         "CNN_V3": {

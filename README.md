@@ -41,12 +41,13 @@
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
 - [Running the Project](#-running-the-project)
+- [Web Application](#-web-application)
 - [Google Colab](#-google-colab)
 - [Saved Models](#-saved-models)
 - [Requirements](#-requirements)
 - [Limitations](#-limitations)
 - [Future Improvements](#-future-improvements)
-- [Planned Application Architecture](#-planned-application-architecture)
+- [Application Architecture](#-application-architecture)
 - [Reproducibility](#-reproducibility)
 - [Academic / Project Significance](#-academic--project-significance)
 - [Author](#-author)
@@ -70,7 +71,7 @@ CNN V1
 
 CNN V2
   ↓
-81.58% segment accuracy
+81.85% segment accuracy
 86.67% song-level accuracy
 
 CNN V3 + SpecAugment
@@ -566,7 +567,7 @@ Softmax
 ### Results
 
 ```text
-Segment Accuracy: 81.58%
+Segment Accuracy: 81.85%
 
 Song-Level Accuracy: 86.67%
 ```
@@ -927,10 +928,10 @@ Therefore, song-level evaluation is a better representation of the intended appl
 The final model achieved:
 
 ```text
-90 / 100 × 100 = 90%
+135 / 150 × 100 = 90%
 ```
 
-on the song-level test evaluation.
+on the song-level test evaluation (150 held-out songs, 15 per genre).
 
 ---
 
@@ -939,7 +940,7 @@ on the song-level test evaluation.
 | Model | Main Improvement | Segment Accuracy | Song Accuracy |
 |---|---|---:|---:|
 | CNN V1 | Baseline CNN | 73.38% | — |
-| CNN V2 | Global Average Pooling | 81.58% | 86.67% |
+| CNN V2 | Global Average Pooling | 81.85% | 86.67% |
 | **CNN V3** | **SpecAugment + deeper CNN + regularization** | **83.26%** | **90.00%** |
 
 ### Improvement
@@ -973,36 +974,32 @@ Therefore, **CNN V3 is selected as the final model**.
 
 # 📁 Project Structure
 
-Recommended repository structure:
-
 ```text
 Music-Genre-CNN/
 │
-├── notebooks/
-│   └── Music_Genre_CNN.ipynb
-│
-├── results/
-│   ├── final_results.json
-│   ├── experiment_results.json
-│   ├── training_accuracy.png
-│   ├── training_loss.png
-│   ├── confusion_matrix_v3.png
-│   └── song_confusion_matrix_v3.png
-│
-├── models/
-│   └── README.md
+├── Music_Genre_CNN.ipynb      # data prep, CNN V1/V2/V3 training, evaluation
+├── final_results.json         # final metrics
 │
 ├── src/
-│   ├── preprocessing.py
-│   └── predict.py
+│   ├── preprocessing.py       # audio → Mel segments (same pipeline as the notebook)
+│   ├── predict.py             # model loading, SpecAugment layer, song-level prediction
+│   └── api.py                 # FastAPI service (also serves the built frontend)
 │
-├── README.md
-├── requirements.txt
-├── .gitignore
-└── LICENSE
+├── frontend/                  # React + Vite + TypeScript web UI
+├── tests/                     # pytest suite
+│
+├── models/
+│   ├── music_genre_cnn_final_v3.keras   # final CNN V3 (~5 MB, tracked in Git)
+│   └── README.md
+│
+├── Dockerfile
+├── requirements.txt           # notebook / training dependencies
+├── requirements-api.txt       # API dependencies
+├── LICENSE
+└── README.md
 ```
 
-Large model files and the original dataset should not be committed directly to a normal Git repository.
+The original audio dataset and the larger V1/V2 model files are not committed.
 
 ---
 
@@ -1011,8 +1008,8 @@ Large model files and the original dataset should not be committed directly to a
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/music-genre-cnn.git
-cd music-genre-cnn
+git clone https://github.com/PulkitTiwari87/Music-Genre-CNN.git
+cd Music-Genre-CNN
 ```
 
 Create a virtual environment:
@@ -1059,7 +1056,7 @@ tqdm
 KaggleHub
 ```
 
-A minimal `requirements.txt` can contain:
+`requirements.txt` (for the notebook) contains the list below; the web API has its own pinned `requirements-api.txt`.
 
 ```text
 numpy
@@ -1089,13 +1086,7 @@ Google Colab
 T4 GPU
 ```
 
-Open:
-
-```text
-notebooks/Music_Genre_CNN.ipynb
-```
-
-Then run the notebook cells in sequence.
+Open `Music_Genre_CNN.ipynb` in Colab (use the badge at the top of the notebook), then run the cells in sequence.
 
 ---
 
@@ -1118,6 +1109,73 @@ DATASET_PATH = "path/to/genres_original"
 Run the preprocessing and training sections.
 
 A GPU is recommended for training.
+
+---
+
+# 🌐 Web Application
+
+A FastAPI service wraps the trained CNN V3, and a React + TypeScript (Vite) page lets you upload a song and see the predicted genre with per-genre probabilities. In production FastAPI serves the built frontend, so there is one process and one port.
+
+## Run locally
+
+Requires Python 3.12 and Node 22.13+.
+
+```bash
+pip install -r requirements-api.txt
+cd frontend && npm ci && npm run build && cd ..
+uvicorn src.api:app
+```
+
+Open <http://127.0.0.1:8000>.
+
+For development with hot reload, run `uvicorn src.api:app --reload` and, in `frontend/`, `npm run dev` (<http://localhost:5173>, proxies `/api` to port 8000).
+
+## API
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/health` | `200` when the model is loaded, `503` otherwise |
+| `POST /api/predict` | Multipart field `file`: WAV, MP3, FLAC or OGG, at most 25 MB and at least 3 s. Only the first 5 minutes are analysed. |
+
+```json
+{
+  "genre": "rock",
+  "confidence": 0.63,
+  "probabilities": { "blues": 0.02, "classical": 0.0, "...": "..." },
+  "segments": 10,
+  "duration_seconds": 30.0
+}
+```
+
+Errors: `413` file too large, `415` not decodable as audio, `422` empty/too short/missing file, `503` model not loaded.
+
+The service decodes uploads in memory (nothing is written to disk). Authentication and rate limiting are not included; put the service behind a gateway if you expose it publicly.
+
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `MODEL_PATH` | `models/music_genre_cnn_final_v3.keras` | Model file to serve |
+| `PORT` | `8000` | Port used by the Docker image |
+
+## Docker
+
+```bash
+docker build -t music-genre-cnn .
+docker run -p 8000:8000 music-genre-cnn
+```
+
+> Status: the Dockerfile is provided but has not been build-tested yet.
+
+## Tests
+
+```bash
+pip install pytest httpx
+pytest                        # preprocessing parity with the notebook, model loading, API
+cd frontend && npm test       # UI behaviour
+```
+
+The preprocessing test executes the notebook's own `extract_segments` cell and checks that `src/preprocessing.py` produces identical features.
 
 ---
 
@@ -1167,40 +1225,15 @@ The final production candidate is:
 music_genre_cnn_final_v3.keras
 ```
 
-The final model should be stored outside the normal Git repository if it exceeds GitHub's recommended file-size limits.
-
-Possible future options include:
-
-- Git LFS
-- Hugging Face Hub
-- Cloud object storage
-- Model hosting platform
+The final model (~5 MB) is committed as `models/music_genre_cnn_final_v3.keras` and is what the API serves. The V1 model (~75 MB) is not committed; for larger models use Git LFS, Hugging Face Hub, or object storage.
 
 ---
 
 # 🔐 `.gitignore`
 
-Large and generated files should be excluded from Git:
+Large and generated files are excluded from Git (`*.keras`, `*.h5`, `*.npz`, `*.npy`, `*.pkl`, `data/`, `datasets/`, virtual environments, `node_modules/`), with one exception for the final serving model, `models/music_genre_cnn_final_v3.keras`.
 
-```gitignore
-*.keras
-*.h5
-*.npz
-*.npy
-*.pkl
-
-data/
-datasets/
-
-__pycache__/
-.ipynb_checkpoints/
-
-.env
-venv/
-.venv/
-```
-
-The original GTZAN audio files should not be uploaded to this repository.
+The original GTZAN audio files must not be uploaded to this repository.
 
 ---
 
@@ -1222,7 +1255,7 @@ GTZAN is a relatively small benchmark dataset and may not represent the full div
 
 ### 4. Audio format
 
-The current pipeline was developed primarily around WAV audio.
+The model was trained on 30-second WAV clips. The API also accepts MP3, FLAC and OGG, and analyses at most the first 5 minutes of a file, but accuracy on compressed or full-length recordings was not measured.
 
 ### 5. Generalization
 
@@ -1244,10 +1277,8 @@ Possible improvements include:
 
 ## 🎧 Better Audio Support
 
-- MP3 support
-- FLAC support
-- Different sample rates
-- Long-form audio processing
+- Benchmark accuracy on MP3/FLAC/OGG and full-length songs (the API accepts them, but they are not evaluated)
+- M4A/AAC support (needs ffmpeg)
 
 ## 🧠 Advanced Models
 
@@ -1284,19 +1315,11 @@ Experiment with:
 - Frequency masking
 - Mixup
 
-## 🚀 Deployment
+## 🚀 Production hardening
 
-Build a production system using:
-
-```text
-React
-   ↓
-FastAPI
-   ↓
-TensorFlow/Keras
-   ↓
-CNN V3
-```
+- Authentication and rate limiting for the API
+- Background jobs for very long audio files
+- Measuring accuracy on real-world (non-GTZAN) music
 
 ## ☁️ Cloud Deployment
 
@@ -1312,9 +1335,9 @@ Possible deployment options include:
 
 ---
 
-# 🌐 Planned Application Architecture
+# 🏗️ Application Architecture
 
-The next stage of the project is to convert the trained ML model into a full-stack application.
+The trained model is served as a full-stack application (see [Web Application](#-web-application)).
 
 ```text
 ┌──────────────────────────┐
@@ -1328,7 +1351,7 @@ The next stage of the project is to convert the trained ML model into a full-sta
 ┌──────────────────────────┐
 │       FastAPI Backend    │
 │                          │
-│ /predict                 │
+│ /api/predict             │
 └────────────┬─────────────┘
              │
              ▼
@@ -1472,7 +1495,7 @@ Three model versions were developed:
 ```text
 CNN V1 → 73.38% segment accuracy
 
-CNN V2 → 81.58% segment accuracy
+CNN V2 → 81.85% segment accuracy
           86.67% song accuracy
 
 CNN V3 → 83.26% segment accuracy
@@ -1536,10 +1559,12 @@ Areas of interest:
 ✅ Song-level evaluation
 ✅ Final model selection
 
-🚧 FastAPI inference API
-🚧 React frontend
-🚧 Production deployment
-🚧 Real-time/user audio prediction
+✅ FastAPI inference API
+✅ React frontend
+✅ User audio upload and prediction
+✅ Automated tests (pytest + Vitest)
+🚧 Docker image (Dockerfile provided, not build-tested)
+🚧 Hosted deployment
 ```
 
 ---

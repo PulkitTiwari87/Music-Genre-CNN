@@ -1,0 +1,7 @@
+fastapi==0.142.2
+uvicorn==0.54.0
+python-multipart==0.0.32
+tensorflow==2.21.0
+librosa==1.0.0
+soundfile==0.14.0
+numpy==2.5.3

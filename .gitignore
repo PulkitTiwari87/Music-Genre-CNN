@@ -28,3 +28,11 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+# Final serving model (~5 MB) is tracked; all other model files stay ignored
+!models/music_genre_cnn_final_v3.keras
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+node_modules/
+frontend/dist/

@@ -1,0 +1,10 @@
+.git
+.venv
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+node_modules
+frontend/dist
+tests
+Music_Genre_CNN.ipynb
