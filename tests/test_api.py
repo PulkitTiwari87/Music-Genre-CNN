@@ -31,6 +31,13 @@ def test_predict_supported_formats(client, fmt):
     assert body["genre"] in body["probabilities"]
 
 
+def test_only_the_first_minute_is_analysed(client):
+    response = post(client, encode(make_audio(90.0), "FLAC"), name="long.flac")
+    assert response.status_code == 200
+    assert response.json()["segments"] == 20
+    assert response.json()["duration_seconds"] == 60.0
+
+
 def test_garbage_file_is_unsupported_media(client):
     assert post(client, b"this is not audio" * 100, "x.mp3").status_code == 415
 

@@ -45,7 +45,7 @@ def load_model(path):
 def predict_song(model, audio):
     """Classify a waveform (22,050 Hz mono). Returns genre, confidence and all probabilities."""
     segments = extract_segments(audio)
-    probabilities = np.mean(model.predict(segments, verbose=0), axis=0)
+    probabilities = np.mean(model.predict(segments, batch_size=8, verbose=0), axis=0)
     best = int(np.argmax(probabilities))
     return {
         "genre": GENRES[best],

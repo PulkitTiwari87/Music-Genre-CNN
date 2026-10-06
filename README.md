@@ -1135,7 +1135,7 @@ For development with hot reload, run `uvicorn src.api:app --reload` and, in `fro
 | Endpoint | Description |
 |---|---|
 | `GET /api/health` | `200` when the model is loaded, `503` otherwise |
-| `POST /api/predict` | Multipart field `file`: WAV, MP3, FLAC or OGG, at most 25 MB and at least 3 s. Only the first 5 minutes are analysed. |
+| `POST /api/predict` | Multipart field `file`: WAV, MP3, FLAC or OGG, at most 25 MB and at least 3 s. Only the first 60 seconds are analysed. |
 
 ```json
 {
@@ -1167,7 +1167,7 @@ TensorFlow is far too large for a Vercel function, so the API runs on **Render**
 1. Render web service (Docker): set `CORS_ORIGINS` to the Vercel URL.
 2. Vercel project: set `VITE_API_URL` to the Render URL, then redeploy.
 
-The free Render plan has 512 MB RAM, which may be too little for TensorFlow, and it sleeps after 15 minutes idle (the first request then takes about a minute).
+The free Render plan has 512 MB RAM. It runs this service, but with limited headroom (measured about 450 MB steady and ~500 MB at the worst-case upload; memory is flat across requests, there is no leak), and a 30 s clip takes roughly 10 s to analyse. Upgrade the plan if you need more. It also sleeps after 15 minutes idle (the first request then takes about a minute).
 
 ## Docker
 
@@ -1181,12 +1181,12 @@ docker run -p 8000:8000 music-genre-cnn
 ## Tests
 
 ```bash
-pip install pytest httpx
-pytest                        # preprocessing parity with the notebook, model loading, API
+pip install pytest httpx librosa   # librosa is only used by the parity tests
+pytest                             # preprocessing parity with the notebook, model loading, API
 cd frontend && npm test       # UI behaviour
 ```
 
-The preprocessing test executes the notebook's own `extract_segments` cell and checks that `src/preprocessing.py` produces identical features.
+The notebook computed features with librosa. `src/preprocessing.py` reproduces them with numpy, soundfile and soxr only, because librosa's numba/scipy stack costs ~130 MB of RAM. The parity test executes the notebook's own `extract_segments` cell and checks the features match (decoding is bit-identical; features differ by at most ~2e-6 on a 0–1 scale; the model's prediction differs by ~1e-7).
 
 ---
 
@@ -1266,7 +1266,7 @@ GTZAN is a relatively small benchmark dataset and may not represent the full div
 
 ### 4. Audio format
 
-The model was trained on 30-second WAV clips. The API also accepts MP3, FLAC and OGG, and analyses at most the first 5 minutes of a file, but accuracy on compressed or full-length recordings was not measured.
+The model was trained on 30-second WAV clips. The API also accepts MP3, FLAC and OGG, and analyses at most the first 60 seconds of a file, but accuracy on compressed or full-length recordings was not measured.
 
 ### 5. Generalization
 

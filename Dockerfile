@@ -8,9 +8,15 @@ RUN npm run build
 
 # Stage 2: FastAPI service that also serves the built frontend
 FROM python:3.12-slim
+# The TF_*/OMP_*/MALLOC_* settings cut resident memory by ~100 MB so the service fits
+# small hosts (Render free tier: 512 MB, 0.5 CPU) without changing predictions.
 ENV PYTHONUNBUFFERED=1 \
     TF_CPP_MIN_LOG_LEVEL=2 \
-    NUMBA_CACHE_DIR=/tmp/numba_cache \
+    TF_ENABLE_ONEDNN_OPTS=0 \
+    TF_NUM_INTRAOP_THREADS=1 \
+    TF_NUM_INTEROP_THREADS=1 \
+    OMP_NUM_THREADS=1 \
+    MALLOC_ARENA_MAX=2 \
     PORT=8000
 WORKDIR /app
 

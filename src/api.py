@@ -25,7 +25,9 @@ DEFAULT_MODEL_PATH = ROOT / "models" / "music_genre_cnn_final_v3.keras"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
-MAX_AUDIO_SECONDS = 300  # analyse at most the first 5 minutes
+# The model was trained on 30 s clips; analysing the first minute also bounds memory
+# (a 5-minute track exhausted Render's 512 MB free tier).
+MAX_AUDIO_SECONDS = 60
 
 
 def self_test(model):
@@ -64,16 +66,18 @@ def create_app(model_path=None):
         )
 
     def classify(data: bytes):
-        try:
-            audio = load_audio(io.BytesIO(data), max_seconds=MAX_AUDIO_SECONDS)
-        except Exception as exc:
-            log.warning("Audio decode failed", exc_info=True)
-            raise HTTPException(415, "Could not decode the file as audio.") from exc
-        try:
-            with predict_lock:
+        # Decode + predict under one lock: concurrent requests would otherwise stack
+        # their audio buffers and activations on a small-memory host.
+        with predict_lock:
+            try:
+                audio = load_audio(io.BytesIO(data), max_seconds=MAX_AUDIO_SECONDS)
+            except Exception as exc:
+                log.warning("Audio decode failed", exc_info=True)
+                raise HTTPException(415, "Could not decode the file as audio.") from exc
+            try:
                 return predict_song(state["model"], audio)
-        except ValueError as exc:  # too short
-            raise HTTPException(422, str(exc)) from exc
+            except ValueError as exc:  # too short
+                raise HTTPException(422, str(exc)) from exc
 
     @app.get("/api/health")
     def health():
