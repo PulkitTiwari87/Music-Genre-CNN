@@ -8,13 +8,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
+import soundfile as sf
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .predict import load_model, predict_song
-from .preprocessing import GENRES, load_audio
+from .preprocessing import GENRES, SAMPLE_RATE, SEGMENT_SAMPLES, load_audio
 
 log = logging.getLogger("music_genre_cnn")
 
@@ -26,6 +28,14 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 MAX_AUDIO_SECONDS = 300  # analyse at most the first 5 minutes
 
 
+def self_test(model):
+    """Run decode -> features -> model once, so a broken environment fails startup, not requests."""
+    wav = io.BytesIO()
+    sf.write(wav, np.zeros(SEGMENT_SAMPLES, np.float32), SAMPLE_RATE, format="WAV")
+    wav.seek(0)
+    predict_song(model, load_audio(wav))
+
+
 def create_app(model_path=None):
     model_path = Path(model_path or os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH))
     state = {"model": None}
@@ -34,7 +44,9 @@ def create_app(model_path=None):
     @asynccontextmanager
     async def lifespan(_app):
         try:
-            state["model"] = load_model(model_path)
+            model = load_model(model_path)
+            self_test(model)
+            state["model"] = model
             log.info("Loaded model from %s", model_path)
         except Exception:
             log.exception("Could not load model from %s", model_path)

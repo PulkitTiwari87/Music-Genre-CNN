@@ -10,6 +10,7 @@ RUN npm run build
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     TF_CPP_MIN_LOG_LEVEL=2 \
+    NUMBA_CACHE_DIR=/tmp/numba_cache \
     PORT=8000
 WORKDIR /app
 

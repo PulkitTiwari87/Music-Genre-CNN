@@ -72,6 +72,15 @@ def test_no_cors_headers_by_default(client):
     assert "access-control-allow-origin" not in response.headers
 
 
+def test_broken_environment_fails_startup_health_check(stub_model_path, monkeypatch):
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("cannot cache function: no locator available")
+
+    monkeypatch.setattr(api, "load_audio", broken)
+    with TestClient(api.create_app(stub_model_path)) as c:
+        assert c.get("/api/health").status_code == 503
+
+
 def test_model_missing_gives_503(tmp_path):
     with TestClient(api.create_app(tmp_path / "missing.keras")) as c:
         assert c.get("/api/health").status_code == 503
