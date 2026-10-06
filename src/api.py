@@ -55,7 +55,7 @@ def create_app(model_path=None):
         try:
             audio = load_audio(io.BytesIO(data), max_seconds=MAX_AUDIO_SECONDS)
         except Exception as exc:
-            log.info("Audio decode failed: %s", exc)
+            log.warning("Audio decode failed", exc_info=True)
             raise HTTPException(415, "Could not decode the file as audio.") from exc
         try:
             with predict_lock:
