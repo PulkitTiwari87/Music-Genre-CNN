@@ -139,6 +139,12 @@ describe("eval.json handling", () => {
     expect(screen.queryByText("0.930")).not.toBeInTheDocument();
   });
 
+  it("always revalidates the export so a replaced or removed file is never served stale", async () => {
+    render(<RocSection />);
+    await screen.findByText("Not available from current experiment");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("analytics/eval.json"), { cache: "no-cache" });
+  });
+
   it("validates structure", () => {
     expect(validateEval(null)).toBe("not a JSON object");
     expect(validateEval({ schema_version: 1 })).toMatch(/missing/);

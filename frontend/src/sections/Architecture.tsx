@@ -201,16 +201,22 @@ export function ModelOverview() {
   return (
     <div className="panel-block">
       <dl className="stats">
-        <Stat label="Model">{model.name}</Stat>
-        <Stat label="Type">Convolutional neural network</Stat>
-        <Stat label="Task">{model.task}</Stat>
+        <Stat label="Model" text>
+          {model.name}
+        </Stat>
+        <Stat label="Type" text>
+          Convolutional neural network
+        </Stat>
+        <Stat label="Task" text>
+          {model.task}
+        </Stat>
         <Stat label="Input" hint="mel bands × frames × channel">{dims(model.input_shape)}</Stat>
         <Stat label="Output" hint="softmax over genres">{dims(model.output_shape)} classes</Stat>
         <Stat label="Parameters" hint={`${int(model.parameters.trainable)} trainable · ${int(model.parameters.non_trainable)} not`}>
           {int(model.parameters.total)}
         </Stat>
         <Stat label="File size">{bytesToMB(model.file_size_bytes)}</Stat>
-        <Stat label="Framework" hint={`saved on ${model.framework.saved_on.replace("@", " ")}`}>
+        <Stat label="Framework" text hint={`saved on ${model.framework.saved_on.replace("@", " ")}`}>
           Keras {model.framework.saved_with_keras} (TensorFlow)
         </Stat>
         <Stat label="Inference, 1 segment" hint="median of 30 runs">{lat.one_segment.median_ms} ms</Stat>

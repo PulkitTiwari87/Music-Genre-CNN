@@ -32,6 +32,7 @@
 }
 
 .lab code {
+  overflow-wrap: anywhere;
   font-family: var(--mono);
   font-size: 0.86em;
   background: var(--surface-2);
@@ -258,6 +259,7 @@
 /* ---------------------------------------------------------------- blocks */
 .panel-block {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* let wide children (code, tables) scroll instead of stretching the page */
   gap: 1.3rem;
   margin-top: 1.5rem;
   min-width: 0;
@@ -305,6 +307,15 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+}
+
+.stat.text dd {
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  overflow-wrap: normal;
 }
 
 .stat-hint {
@@ -736,7 +747,7 @@
   border-collapse: separate;
   border-spacing: 2px;
   width: 100%;
-  min-width: 21rem;
+  min-width: calc(var(--cols, 10) * 1.5rem + 4.2rem);
   font-size: 0.72rem;
   font-family: var(--mono);
 }

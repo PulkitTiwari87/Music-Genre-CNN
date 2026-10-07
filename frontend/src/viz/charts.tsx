@@ -145,7 +145,12 @@ export function LineChart({
           {markers.map((m, index) => (
             <g key={m.label}>
               <line className="marker" x1={sx(m.x)} x2={sx(m.x)} y1={0} y2={innerH} />
-              <text className="marker-label" x={sx(m.x) + 4} y={10 + index * 13}>
+              <text
+                className="marker-label"
+                x={sx(m.x) + (sx(m.x) > innerW * 0.5 ? -4 : 4)}
+                y={10 + index * 13}
+                textAnchor={sx(m.x) > innerW * 0.5 ? "end" : "start"}
+              >
                 {m.label}
               </text>
             </g>
@@ -467,7 +472,7 @@ export function Heatmap({
   };
   return (
     <div className="heatmap-wrap">
-      <table className="heatmap" aria-label={ariaLabel}>
+      <table className="heatmap" aria-label={ariaLabel} style={{ "--cols": colLabels.length } as CSSProperties}>
         <thead>
           <tr>
             <th className="corner" scope="col">

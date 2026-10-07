@@ -90,7 +90,7 @@ export function TrainingPanel({ initial = "v3" as RunKey }) {
           {run.learning_rate_reductions.length ? run.learning_rate_reductions[run.learning_rate_reductions.length - 1].to.toExponential(1) : "n/a"}.
         </li>
         <li>
-          <strong>Fit:</strong> final training accuracy {pct(fit.finalTrainAcc)} vs validation {pct(fit.finalValAcc)} (gap {pct(fit.gap)}): {fit.verdict}.
+          <strong>Fit:</strong> final training accuracy {pct(fit.finalTrainAcc)} vs validation {pct(fit.finalValAcc)} (gap {(fit.gap * 100).toFixed(1)} points): {fit.verdict}.
         </li>
         <li>
           <strong>Which weights were evaluated:</strong> the checkpoint with the best validation <em>accuracy</em> (epoch {run.best_val_accuracy_epoch},{" "}

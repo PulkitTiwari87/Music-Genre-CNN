@@ -985,7 +985,8 @@ Music-Genre-CNN/
 │   ├── predict.py             # model loading, SpecAugment layer, song-level prediction
 │   └── api.py                 # FastAPI service (also serves the built frontend)
 │
-├── frontend/                  # React + Vite + TypeScript web UI
+├── frontend/                  # React + Vite + TypeScript web UI (demo, /brag, /model)
+├── analytics/                 # data extraction + the Colab export for the case-study pages
 ├── tests/                     # pytest suite
 │
 ├── models/
@@ -1159,6 +1160,17 @@ The service decodes uploads in memory (nothing is written to disk). Authenticati
 | `PORT` | `8000` | Port used by the Docker image (Render sets its own) |
 | `CORS_ORIGINS` | *(unset)* | Comma-separated UI origins allowed to call the API. Only needed when the UI is hosted elsewhere. |
 | `VITE_API_URL` | *(unset)* | Build-time, frontend only: base URL of the API (e.g. `https://my-api.onrender.com`). Unset = same origin. |
+
+## Case study and model details (`/brag`, `/model`)
+
+Two further pages explain the project from data to evaluation:
+
+- **`/brag`**: a 12-scene scroll narrative (result → problem → data → feature extraction → model → training → evaluation → ROC/PR → failures → lessons → takeaway).
+- **`/model`**: the technical reference (real architecture read from the saved model, training configuration with notebook-cell evidence, learning curves, evaluation dashboard, V1→V3 comparison, the reasoning behind each design choice, a per-genre explorer).
+
+Every number on them comes from a generated file, not from the page source. `notebook.json` and `model.json` are produced from the notebook and the saved model and are committed; the ROC/PR curves, probabilities, confidence analysis, error spectrograms and PCA/t-SNE need the audio and the exact test split, so they come from one Colab cell (`analytics/export_analytics.py`) and are saved as `frontend/public/analytics/eval.json`. Until that file exists, those panels read **"Not available from current experiment"** instead of showing anything invented.
+
+How each file is generated, and the checks that guard it, are in [`analytics/README.md`](analytics/README.md).
 
 ## Deployment (Render + Vercel)
 

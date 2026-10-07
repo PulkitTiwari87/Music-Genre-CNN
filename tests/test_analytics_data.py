@@ -110,6 +110,37 @@ def test_dataset_and_training_facts(notebook_json):
     assert v3["best_checkpoint_val_accuracy"] == pytest.approx(0.82298)
 
 
+def test_a_committed_eval_export_is_real_and_matches_the_recorded_run(notebook_json):
+    """analytics/export_analytics.py output may be committed, but never synthetic test data."""
+    path = DATA.parent.parent / "public" / "analytics" / "eval.json"
+    if not path.exists():
+        pytest.skip(
+            "no eval.json committed yet (the pages show 'Not available' for those panels)"
+        )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["schema_version"] == 1
+    assert data["provenance"]["synthetic"] is False, (
+        "eval.json is synthetic test data; delete it"
+    )
+    assert data["split_check"]["matches"] is True, (
+        "export was made on a split that differs from the evaluated one"
+    )
+    assert (
+        data["split_check"]["n_test_segments"]
+        == notebook_json["dataset"]["segments"]["test"]
+    )
+    assert (
+        data["split_check"]["n_test_songs"] == notebook_json["dataset"]["songs"]["test"]
+    )
+    assert data["classes"] == notebook_json["dataset"]["classes"]
+    # the export's exact matrices must agree with the figures transcribed from the notebook
+    assert (
+        data["segment"]["confusion"]
+        == notebook_json["confusion"]["v3_segment"]["matrix"]
+    )
+    assert data["song"]["confusion"] == notebook_json["confusion"]["v3_song"]["matrix"]
+
+
 def test_model_json_matches_the_real_model_file():
     model_path = ROOT / "models" / "music_genre_cnn_final_v3.keras"
     if not model_path.exists():

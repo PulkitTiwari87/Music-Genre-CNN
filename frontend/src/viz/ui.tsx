@@ -144,13 +144,16 @@ export function Stat({
   label,
   children,
   hint,
+  text = false,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
+  /** Use for words rather than numbers: a smaller, proportional face that wraps at word boundaries. */
+  text?: boolean;
 }) {
   return (
-    <div className="stat">
+    <div className={text ? "stat text" : "stat"}>
       <dt>{label}</dt>
       <dd>{children}</dd>
       {hint && <p className="stat-hint">{hint}</p>}
