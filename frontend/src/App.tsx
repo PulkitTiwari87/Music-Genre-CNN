@@ -26,7 +26,7 @@ export default function App() {
   }, [path]);
 
   return (
-    <div className={lab ? "shell lab-theme" : "shell"}>
+    <div className={path === "/brag" ? "shell lab-theme cinema" : lab ? "shell lab-theme" : "shell"}>
       <a className="skip" href="#main">
         Skip to content
       </a>

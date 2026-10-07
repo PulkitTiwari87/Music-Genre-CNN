@@ -76,7 +76,7 @@ describe("routing", () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Case study" }));
-    expect(await screen.findByText("of unseen songs placed in the right genre")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /music genre\s*classification/i })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/brag");
     expect(document.title).toContain("Case study");
   });
@@ -95,9 +95,8 @@ describe("case-study numbers come from the notebook, not from the page", () => {
   it("shows the recorded accuracies on /brag", async () => {
     window.history.pushState({}, "", "/brag");
     render(<App />);
-    const hero = await screen.findByRole("heading", { level: 1 });
-    expect(hero).toHaveTextContent("90.0%"); // song_accuracy 0.9
-    expect(await screen.findByText("135 of 150", { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText("90.0%")).toBeInTheDocument(); // song_accuracy 0.9, in the opening
+    expect((await screen.findAllByText("135 of 150", { exact: false })).length).toBeGreaterThan(0);
   });
 
   it("says Not available instead of inventing ROC curves when eval.json is absent", async () => {
