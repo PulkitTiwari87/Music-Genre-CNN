@@ -1,0 +1,425 @@
+{
+ "generated_by": "analytics/extract_model.py",
+ "model_file": "music_genre_cnn_final_v3.keras",
+ "file_size_bytes": 5160645,
+ "name": "CNN V3 (SpecAugment)",
+ "type": "Sequential convolutional neural network",
+ "task": "10-class music genre classification",
+ "input_shape": [
+  128,
+  130,
+  1
+ ],
+ "output_shape": [
+  10
+ ],
+ "classes": 10,
+ "parameters": {
+  "total": 423946,
+  "trainable": 422986,
+  "non_trainable": 960,
+  "notebook_summary_matches": true
+ },
+ "framework": {
+  "saved_with_keras": "3.13.2",
+  "saved_on": "2026-08-15@13:41:29",
+  "measured_with_tensorflow": "2.21.0",
+  "measured_with_keras": "3.15.1"
+ },
+ "layers": [
+  {
+   "name": "spec_augment_1",
+   "type": "SpecAugment",
+   "freq_mask_param": 12,
+   "time_mask_param": 15,
+   "input_shape": [
+    128,
+    130,
+    1
+   ],
+   "output_shape": [
+    128,
+    130,
+    1
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "conv2d_10",
+   "type": "Conv2D",
+   "filters": 32,
+   "kernel_size": [
+    3,
+    3
+   ],
+   "strides": [
+    1,
+    1
+   ],
+   "padding": "same",
+   "activation": "relu",
+   "l2": 0.0001,
+   "input_shape": [
+    128,
+    130,
+    1
+   ],
+   "output_shape": [
+    128,
+    130,
+    32
+   ],
+   "params": 320,
+   "trainable_params": 320,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "batch_normalization_10",
+   "type": "BatchNormalization",
+   "momentum": 0.99,
+   "epsilon": 0.001,
+   "input_shape": [
+    128,
+    130,
+    32
+   ],
+   "output_shape": [
+    128,
+    130,
+    32
+   ],
+   "params": 128,
+   "trainable_params": 64,
+   "non_trainable_params": 64
+  },
+  {
+   "name": "max_pooling2d_10",
+   "type": "MaxPooling2D",
+   "strides": [
+    2,
+    2
+   ],
+   "padding": "valid",
+   "pool_size": [
+    2,
+    2
+   ],
+   "input_shape": [
+    128,
+    130,
+    32
+   ],
+   "output_shape": [
+    64,
+    65,
+    32
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "conv2d_11",
+   "type": "Conv2D",
+   "filters": 64,
+   "kernel_size": [
+    3,
+    3
+   ],
+   "strides": [
+    1,
+    1
+   ],
+   "padding": "same",
+   "activation": "relu",
+   "l2": 0.0001,
+   "input_shape": [
+    64,
+    65,
+    32
+   ],
+   "output_shape": [
+    64,
+    65,
+    64
+   ],
+   "params": 18496,
+   "trainable_params": 18496,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "batch_normalization_11",
+   "type": "BatchNormalization",
+   "momentum": 0.99,
+   "epsilon": 0.001,
+   "input_shape": [
+    64,
+    65,
+    64
+   ],
+   "output_shape": [
+    64,
+    65,
+    64
+   ],
+   "params": 256,
+   "trainable_params": 128,
+   "non_trainable_params": 128
+  },
+  {
+   "name": "max_pooling2d_11",
+   "type": "MaxPooling2D",
+   "strides": [
+    2,
+    2
+   ],
+   "padding": "valid",
+   "pool_size": [
+    2,
+    2
+   ],
+   "input_shape": [
+    64,
+    65,
+    64
+   ],
+   "output_shape": [
+    32,
+    32,
+    64
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "conv2d_12",
+   "type": "Conv2D",
+   "filters": 128,
+   "kernel_size": [
+    3,
+    3
+   ],
+   "strides": [
+    1,
+    1
+   ],
+   "padding": "same",
+   "activation": "relu",
+   "l2": 0.0001,
+   "input_shape": [
+    32,
+    32,
+    64
+   ],
+   "output_shape": [
+    32,
+    32,
+    128
+   ],
+   "params": 73856,
+   "trainable_params": 73856,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "batch_normalization_12",
+   "type": "BatchNormalization",
+   "momentum": 0.99,
+   "epsilon": 0.001,
+   "input_shape": [
+    32,
+    32,
+    128
+   ],
+   "output_shape": [
+    32,
+    32,
+    128
+   ],
+   "params": 512,
+   "trainable_params": 256,
+   "non_trainable_params": 256
+  },
+  {
+   "name": "max_pooling2d_12",
+   "type": "MaxPooling2D",
+   "strides": [
+    2,
+    2
+   ],
+   "padding": "valid",
+   "pool_size": [
+    2,
+    2
+   ],
+   "input_shape": [
+    32,
+    32,
+    128
+   ],
+   "output_shape": [
+    16,
+    16,
+    128
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "conv2d_13",
+   "type": "Conv2D",
+   "filters": 256,
+   "kernel_size": [
+    3,
+    3
+   ],
+   "strides": [
+    1,
+    1
+   ],
+   "padding": "same",
+   "activation": "relu",
+   "l2": 0.0001,
+   "input_shape": [
+    16,
+    16,
+    128
+   ],
+   "output_shape": [
+    16,
+    16,
+    256
+   ],
+   "params": 295168,
+   "trainable_params": 295168,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "batch_normalization_13",
+   "type": "BatchNormalization",
+   "momentum": 0.99,
+   "epsilon": 0.001,
+   "input_shape": [
+    16,
+    16,
+    256
+   ],
+   "output_shape": [
+    16,
+    16,
+    256
+   ],
+   "params": 1024,
+   "trainable_params": 512,
+   "non_trainable_params": 512
+  },
+  {
+   "name": "max_pooling2d_13",
+   "type": "MaxPooling2D",
+   "strides": [
+    2,
+    2
+   ],
+   "padding": "valid",
+   "pool_size": [
+    2,
+    2
+   ],
+   "input_shape": [
+    16,
+    16,
+    256
+   ],
+   "output_shape": [
+    8,
+    8,
+    256
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "global_average_pooling2d_2",
+   "type": "GlobalAveragePooling2D",
+   "input_shape": [
+    8,
+    8,
+    256
+   ],
+   "output_shape": [
+    256
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "dense_7",
+   "type": "Dense",
+   "activation": "relu",
+   "units": 128,
+   "l2": 0.0001,
+   "input_shape": [
+    256
+   ],
+   "output_shape": [
+    128
+   ],
+   "params": 32896,
+   "trainable_params": 32896,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "dropout_3",
+   "type": "Dropout",
+   "rate": 0.4,
+   "input_shape": [
+    128
+   ],
+   "output_shape": [
+    128
+   ],
+   "params": 0,
+   "trainable_params": 0,
+   "non_trainable_params": 0
+  },
+  {
+   "name": "dense_8",
+   "type": "Dense",
+   "activation": "softmax",
+   "units": 10,
+   "input_shape": [
+    128
+   ],
+   "output_shape": [
+    10
+   ],
+   "params": 1290,
+   "trainable_params": 1290,
+   "non_trainable_params": 0
+  }
+ ],
+ "latency": {
+  "measured_on": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel, 20 logical CPUs, Windows, TensorFlow 2.21.0 (CPU only). A development machine, not the production host.",
+  "one_segment": {
+   "median_ms": 50.6,
+   "min_ms": 44.2,
+   "runs": 30
+  },
+  "ten_segments": {
+   "median_ms": 61.7,
+   "min_ms": 58.9,
+   "runs": 15
+  },
+  "full_30s_song": {
+   "median_ms": 114.7,
+   "min_ms": 107.2,
+   "runs": 5
+  },
+  "note": "full_30s_song includes feature extraction and 10 segment predictions."
+ }
+}

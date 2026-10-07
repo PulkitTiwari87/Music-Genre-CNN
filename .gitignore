@@ -16,6 +16,8 @@ __pycache__/
 # Dataset
 data/
 datasets/
+# ...but the web app's own generated data modules live in frontend/src/data and must be committed
+!frontend/src/data/
 
 # Environment
 .env
