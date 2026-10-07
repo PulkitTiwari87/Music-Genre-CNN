@@ -154,6 +154,20 @@ def test_split_fingerprint_is_what_the_notebook_printed():
     assert list(EXPECTED_FIRST_TEST_FILES) == printed
 
 
+def test_exporter_pins_the_deployed_models_weights():
+    """The exporter refuses any other model, so the pinned hash must be the committed model's."""
+    model_path = ROOT / "models" / "music_genre_cnn_final_v3.keras"
+    if not model_path.exists():
+        pytest.skip("trained model not present")
+    from analytics.export_analytics import (
+        DEPLOYED_MODEL_WEIGHTS_SHA256,
+        weights_fingerprint,
+    )
+    from src.predict import load_model
+
+    assert weights_fingerprint(load_model(model_path)) == DEPLOYED_MODEL_WEIGHTS_SHA256
+
+
 def test_model_json_matches_the_real_model_file():
     model_path = ROOT / "models" / "music_genre_cnn_final_v3.keras"
     if not model_path.exists():

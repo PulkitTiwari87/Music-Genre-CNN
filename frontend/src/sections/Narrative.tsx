@@ -268,19 +268,21 @@ export function ClassExplorer() {
 }
 
 /* ------------------------------------------------------------------- reproduce */
-export const EXPORT_CELL = `# Run AFTER the CNN V3 evaluation cells (best_model_v3, X_test, y_test_cat,
-# train_df, val_df, test_df and label_encoder must exist).
+export const EXPORT_CELL = `# Needs X_test, y_test_cat, train_df, val_df, test_df, label_encoder and the SpecAugment class.
+# Use the DEPLOYED model from the repo, NOT best_model_v3: re-running the notebook re-trains it.
 !wget -q -O export_analytics.py https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/analytics/export_analytics.py
+!wget -q -O deployed_v3.keras https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/models/music_genre_cnn_final_v3.keras
 import importlib, export_analytics
 importlib.reload(export_analytics)   # re-reads the file just downloaded, even if it was imported before
 
+deployed = tf.keras.models.load_model("deployed_v3.keras", custom_objects={"SpecAugment": SpecAugment})
+
 export_analytics.export_analytics(
-    model=best_model_v3,
+    model=deployed,
     X_test=X_test,
     y_test_onehot=y_test_cat,
     train_df=train_df, val_df=val_df, test_df=test_df,
     class_names=list(label_encoder.classes_),
-    history=history_v3,   # optional
 )
 
 from google.colab import files
@@ -319,7 +321,8 @@ export function Reproduce() {
           The ROC and PR curves, probabilities, confidence, error samples, embeddings and spectrogram examples need your trained model and audio, so they come
           from a Colab cell. Paste it at the end of the notebook, download <code>analytics_eval.json</code>, save it as{" "}
           <code>frontend/public/analytics/eval.json</code> and commit. The exporter stops if the test split is not the one the model was evaluated on (its
-          segment accuracy must equal the recorded 0.8325550556182861).
+          segment accuracy must match the recorded 0.8325550556182861), and the model must hash to the deployed CNN V3 weights, because re-running the
+          notebook re-trains the network.
         </li>
       </ol>
       <div className="code-wrap">

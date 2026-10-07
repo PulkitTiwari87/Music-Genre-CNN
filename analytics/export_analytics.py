@@ -1,18 +1,20 @@
 """Export the evaluation analytics that power the /brag and /model pages.
 
-Run this in the Colab notebook AFTER the CNN V3 evaluation cells (so `best_model_v3`,
-`X_test`, `y_test_cat`, `train_df`, `val_df`, `test_df` and `label_encoder` exist):
+Run this in the Colab notebook once `X_test`, `y_test_cat`, `train_df`, `val_df`, `test_df`,
+`label_encoder` and the `SpecAugment` class exist. Use the DEPLOYED model from the repo, not
+`best_model_v3`: re-running the notebook re-trains the network, so that variable is a different model.
 
     !wget -q -O export_analytics.py https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/analytics/export_analytics.py
+    !wget -q -O deployed_v3.keras https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/models/music_genre_cnn_final_v3.keras
     import importlib, export_analytics
     importlib.reload(export_analytics)   # picks up a re-downloaded file in the same runtime
+    deployed = tf.keras.models.load_model("deployed_v3.keras", custom_objects={"SpecAugment": SpecAugment})
     export_analytics.export_analytics(
-        model=best_model_v3,
+        model=deployed,
         X_test=X_test,
         y_test_onehot=y_test_cat,
         train_df=train_df, val_df=val_df, test_df=test_df,
         class_names=list(label_encoder.classes_),
-        history=history_v3,                       # optional
     )
     from google.colab import files
     files.download("analytics_eval.json")
@@ -21,11 +23,12 @@ Then save the downloaded file as frontend/public/analytics/eval.json and commit 
 
 Nothing here is estimated: every number is computed from the model's predicted
 probabilities on the real test set, or from the real audio files. Before writing anything
-the function checks that the test split is the one the model was evaluated on:
+the function checks that it is describing the reported results:
+  0. the model's weights must hash to DEPLOYED_MODEL_WEIGHTS_SHA256 (the deployed CNN V3);
   1. test_df must start with the songs the notebook printed (cell 116): same split, same order;
   2. the segment accuracy must match the recorded 0.8325550556182861 to within
-     MAX_DRIFT_SEGMENTS segments (a newer librosa/TensorFlow can flip a borderline
-     segment; any drift is recorded in `split_check`);
+     MAX_DRIFT_SEGMENTS segments (a newer librosa can flip a borderline segment; any drift
+     is recorded in `split_check`);
   3. the re-extracted features must equal X_test.
 If any check fails it stops.
 
@@ -63,6 +66,13 @@ EXPECTED_SEGMENT_ACCURACY = (
 )
 # First test songs the notebook printed (cell 116, `song_results_df.head()`): a fingerprint of the
 # split AND its file order. It only matches if test_df is the split the model was evaluated on.
+# SHA-256 of the weights of the deployed model (models/music_genre_cnn_final_v3.keras). Re-running the
+# notebook RE-TRAINS the network and gives different weights, so analytics must be computed on this file,
+# never on whatever `best_model_v3` happens to be in memory.
+DEPLOYED_MODEL_WEIGHTS_SHA256 = (
+    "803f0a2a71908ce142fe889b6dee6203173acdbab5d55c1a51a73e2cbabe88fc"
+)
+MODEL_URL = "https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/models/music_genre_cnn_final_v3.keras"
 EXPECTED_FIRST_TEST_FILES = (
     "disco.00082.wav",
     "pop.00050.wav",
@@ -289,6 +299,16 @@ def _embedding(points, **extra):
     return {"x": _round(points[:, 0], 3), "y": _round(points[:, 1], 3), **extra}
 
 
+def weights_fingerprint(model):
+    """Deterministic SHA-256 over every weight tensor (float32, layer order)."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    for weight in model.get_weights():
+        digest.update(np.ascontiguousarray(weight, dtype=np.float32).tobytes())
+    return digest.hexdigest()
+
+
 # ------------------------------------------------------------------------ main
 def export_analytics(
     model,
@@ -304,6 +324,7 @@ def export_analytics(
     seed=42,
     expected_segment_accuracy=EXPECTED_SEGMENT_ACCURACY,
     expected_first_files=EXPECTED_FIRST_TEST_FILES,
+    expected_weights_sha256=DEPLOYED_MODEL_WEIGHTS_SHA256,
     log=print,
 ):
     import os
@@ -314,6 +335,20 @@ def export_analytics(
     from sklearn.decomposition import PCA
     from sklearn.metrics import silhouette_score
     from sklearn.preprocessing import StandardScaler
+
+    # 0. model identity: the analytics must describe the DEPLOYED model, not a re-trained one
+    if expected_weights_sha256 is not None:
+        found = weights_fingerprint(model)
+        if found != expected_weights_sha256:
+            raise RuntimeError(
+                "This model is not the deployed CNN V3: its weights differ (fingerprint "
+                f"{found[:12]}… vs {expected_weights_sha256[:12]}…). Re-running the notebook re-trains the "
+                "network, so best_model_v3 in memory is a different model. Load the deployed one:\n"
+                f"  !wget -q -O deployed_v3.keras {MODEL_URL}\n"
+                "  model = tf.keras.models.load_model('deployed_v3.keras', "
+                "custom_objects={'SpecAugment': SpecAugment})"
+            )
+        log("model check OK: weights are those of the deployed CNN V3")
 
     classes = list(class_names)
     index = {name: i for i, name in enumerate(classes)}
@@ -607,6 +642,7 @@ def export_analytics(
             ),
             "synthetic": False,
             "source": "Colab notebook run",
+            "model_weights_sha256": weights_fingerprint(model),
             "versions": {
                 "python": platform.python_version(),
                 "numpy": np.__version__,

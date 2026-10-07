@@ -30,21 +30,28 @@ trustworthy, and a test proves a single wrong digit is rejected.
 
 ## Generating `eval.json` (Colab)
 
-Run after the CNN V3 evaluation cells, so that `best_model_v3`, `X_test`, `y_test_cat`, `train_df`,
-`val_df`, `test_df` and `label_encoder` exist:
+Run once `X_test`, `y_test_cat`, `train_df`, `val_df`, `test_df`, `label_encoder` and the `SpecAugment`
+class exist.
+
+> **Use the deployed model from the repo, not `best_model_v3`.** Re-running the notebook *re-trains* the
+> network (different weights every run, and the notebook also overwrites the model files in Google Drive), so
+> `best_model_v3` in a re-run session is a different model from the deployed one behind the reported 90%.
+> The exporter refuses any model whose weights do not hash to the committed one.
 
 ```python
 !wget -q -O export_analytics.py https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/analytics/export_analytics.py
+!wget -q -O deployed_v3.keras https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/models/music_genre_cnn_final_v3.keras
 import importlib, export_analytics
 importlib.reload(export_analytics)   # re-reads the file just downloaded, even if it was imported before
 
+deployed = tf.keras.models.load_model("deployed_v3.keras", custom_objects={"SpecAugment": SpecAugment})
+
 export_analytics.export_analytics(
-    model=best_model_v3,
+    model=deployed,
     X_test=X_test,
     y_test_onehot=y_test_cat,
     train_df=train_df, val_df=val_df, test_df=test_df,
     class_names=list(label_encoder.classes_),
-    history=history_v3,   # optional
 )
 
 from google.colab import files
@@ -55,6 +62,9 @@ Save the download as `frontend/public/analytics/eval.json`, commit and push.
 
 Safety checks inside the exporter, before anything is written:
 
+0. **Model identity.** The model's weights must hash (SHA-256 over all float32 tensors) to
+   `DEPLOYED_MODEL_WEIGHTS_SHA256`, the hash of `models/music_genre_cnn_final_v3.keras`. A re-trained network
+   is refused with instructions for loading the right file.
 1. **Split identity.** `test_df` must start with the five songs the notebook printed in cell 116
    (`disco.00082`, `pop.00050`, `rock.00061`, `metal.00073`, `jazz.00094`). If the notebook was re-run and the file
    order, and therefore the split, changed, it stops: curves from songs the model trained on would be inflated.

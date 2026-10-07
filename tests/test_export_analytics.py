@@ -78,6 +78,7 @@ def exported(dataset, stub_model, tmp_path_factory):
         list(GENRES),
         out_path=str(out),
         expected_segment_accuracy=None,
+        expected_weights_sha256=None,
         log=lambda *_: None,
         provenance={"synthetic": True, "source": "unit test"},
     )
@@ -201,6 +202,7 @@ def test_refuses_to_export_when_the_split_is_not_the_evaluated_one(
             frames["test"],
             list(GENRES),
             out_path=str(tmp_path / "x.json"),
+            expected_weights_sha256=None,
             log=lambda *_: None,
         )
     assert not (tmp_path / "x.json").exists()
@@ -217,6 +219,7 @@ def _run(dataset, stub_model, tmp_path, **kwargs):
         frames["test"],
         list(GENRES),
         out_path=str(tmp_path / "out.json"),
+        expected_weights_sha256=None,
         log=lambda *_: None,
         **kwargs,
     )
@@ -303,6 +306,58 @@ def test_the_fingerprint_matches_when_the_split_starts_with_the_recorded_songs(
     assert result["split_check"]["fingerprint_ok"] is True
 
 
+def _export_with_default_model_check(dataset, model, tmp_path, **kwargs):
+    frames, X_test, y_onehot = dataset
+    return ex.export_analytics(
+        model,
+        X_test,
+        y_onehot,
+        frames["train"],
+        frames["val"],
+        frames["test"],
+        list(GENRES),
+        out_path=str(tmp_path / "m.json"),
+        expected_segment_accuracy=None,
+        log=lambda *_: None,
+        **kwargs,
+    )
+
+
+def test_a_model_that_is_not_the_deployed_one_is_refused(dataset, stub_model, tmp_path):
+    """A re-trained network has different weights; its curves must never be presented as the deployed model's."""
+    with pytest.raises(RuntimeError, match="not the deployed CNN V3") as error:
+        _export_with_default_model_check(
+            dataset, stub_model, tmp_path
+        )  # default = the real model's hash
+    assert "deployed_v3.keras" in str(
+        error.value
+    )  # the message says how to load the right model
+    assert not (tmp_path / "m.json").exists()
+
+
+def test_the_matching_weights_fingerprint_is_accepted_and_recorded(
+    dataset, stub_model, tmp_path
+):
+    fingerprint = ex.weights_fingerprint(stub_model)
+    result = _export_with_default_model_check(
+        dataset, stub_model, tmp_path, expected_weights_sha256=fingerprint
+    )
+    assert result["provenance"]["model_weights_sha256"] == fingerprint
+
+
+def test_the_fingerprint_changes_when_one_weight_changes(stub_model):
+    original = [w.copy() for w in stub_model.get_weights()]
+    before = ex.weights_fingerprint(stub_model)
+    changed = [w.copy() for w in original]
+    changed[0].flat[0] += 1e-3
+    stub_model.set_weights(changed)
+    try:
+        assert ex.weights_fingerprint(stub_model) != before
+    finally:
+        stub_model.set_weights(original)
+    assert ex.weights_fingerprint(stub_model) == before
+
+
 def test_refuses_when_test_df_does_not_match_x_test(dataset, stub_model, tmp_path):
     frames, X_test, y_onehot = dataset
     shuffled = frames["test"].iloc[::-1].reset_index(drop=True)
@@ -317,5 +372,6 @@ def test_refuses_when_test_df_does_not_match_x_test(dataset, stub_model, tmp_pat
             list(GENRES),
             out_path=str(tmp_path / "y.json"),
             expected_segment_accuracy=None,
+            expected_weights_sha256=None,
             log=lambda *_: None,
         )
