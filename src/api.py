@@ -14,6 +14,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .predict import load_model, predict_song
 from .preprocessing import GENRES, SAMPLE_RATE, SEGMENT_SAMPLES, load_audio
@@ -28,6 +29,24 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 # The model was trained on 30 s clips; analysing the first minute also bounds memory
 # (a 5-minute track exhausted Render's 512 MB free tier).
 MAX_AUDIO_SECONDS = 60
+
+
+class SPAStaticFiles(StaticFiles):
+    """Serve the built React app; unknown extension-less paths (/brag, /model) get index.html."""
+
+    async def get_response(self, path, scope):
+        try:
+            return await super().get_response(path, scope)
+        except (
+            StarletteHTTPException
+        ) as exc:  # StaticFiles raises Starlette's, not FastAPI's
+            parts = path.replace("\\", "/").split(
+                "/"
+            )  # Starlette passes OS-normalised paths
+            is_page = parts[0] != "api" and "." not in parts[-1]
+            if exc.status_code == 404 and is_page:
+                return await super().get_response("index.html", scope)
+            raise
 
 
 def self_test(model):
@@ -100,7 +119,9 @@ def create_app(model_path=None):
 
     # Mounted last so it never shadows /api routes.
     if FRONTEND_DIST.is_dir():
-        app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+        app.mount(
+            "/", SPAStaticFiles(directory=FRONTEND_DIST, html=True), name="frontend"
+        )
 
     return app
 

@@ -45,6 +45,121 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip:focus {
+  top: 0.5rem;
+}
+
+.shell {
+  min-height: 100vh;
+}
+
+/* Dark "lab" theme for the case-study pages, independent of the OS setting. */
+.lab-theme {
+  --bg: #0a0914;
+  --surface: #12101f;
+  --surface-2: #1a1730;
+  --text: #ecebf7;
+  --muted: #a19dbd;
+  --border: #2a2644;
+  --accent: #8f78ff;
+  --accent-contrast: #12091f;
+  --danger-bg: #3a1620;
+  --danger-text: #ffb3c0;
+  background: radial-gradient(70rem 32rem at 20% -8rem, rgb(143 120 255 / 14%), transparent) no-repeat, var(--bg);
+  color: var(--text);
+  color-scheme: dark;
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0.9rem 1rem;
+}
+
+.topnav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.topnav ul {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topnav li a {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.topnav li a:hover,
+.topnav li a[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.topnav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hero-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1rem 0 0;
+}
+
+.hero-links a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.route-loading {
+  text-align: center;
+  color: var(--muted);
+  padding: 4rem 1rem;
+}
+
 .page {
   max-width: 40rem;
   margin: 0 auto;

@@ -88,6 +88,28 @@ def test_broken_environment_fails_startup_health_check(stub_model_path, monkeypa
         assert c.get("/api/health").status_code == 503
 
 
+def test_spa_routes_serve_index_but_api_and_assets_still_404(
+    stub_model_path, tmp_path, monkeypatch
+):
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<!doctype html><title>spa</title>")
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
+    monkeypatch.setattr(api, "FRONTEND_DIST", tmp_path)
+    with TestClient(api.create_app(stub_model_path)) as c:
+        for route in ("/", "/brag", "/model", "/brag/"):
+            response = c.get(route)
+            assert (
+                response.status_code == 200 and "<title>spa</title>" in response.text
+            ), route
+        assert c.get("/assets/app.js").status_code == 200
+        assert c.get("/assets/missing.js").status_code == 404
+        assert (
+            c.get("/analytics/eval.json").status_code == 404
+        )  # data files are never faked
+        assert c.get("/api/health").json()["status"] == "ok"
+        assert c.get("/api/nope").status_code == 404
+
+
 def test_model_missing_gives_503(tmp_path):
     with TestClient(api.create_app(tmp_path / "missing.keras")) as c:
         assert c.get("/api/health").status_code == 503

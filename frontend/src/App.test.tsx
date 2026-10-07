@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -46,7 +46,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Hip-Hop" })).toBeInTheDocument();
     expect(screen.getByText(/81\.2% confidence/)).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(10);
+    expect(within(screen.getByRole("region", { name: "Prediction" })).getAllByRole("listitem")).toHaveLength(10);
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/predict");

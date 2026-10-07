@@ -739,20 +739,20 @@ SpecAugment
 
 # 📈 CNN V3 Training Result
 
-CNN V3 reached its best validation performance around epoch 22.
-
-Training continued until early stopping:
+Training stopped early at epoch 28 (about 185 s on a Colab GPU):
 
 ```text
 Epoch 28: Early stopping
-Restoring model weights from the end of the best epoch: 22
+Restoring model weights from the end of the best epoch: 22   (best validation loss)
 ```
 
-Best validation accuracy:
+The model that was evaluated is the checkpoint with the best validation accuracy, saved at epoch 21:
 
 ```text
-82.29%
+Best validation accuracy: 82.30%  (0.82298, epoch 21)
 ```
+
+These numbers are extracted from the notebook's saved outputs by `analytics/extract_notebook.py`.
 
 ---
 
