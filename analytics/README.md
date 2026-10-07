@@ -35,7 +35,8 @@ Run after the CNN V3 evaluation cells, so that `best_model_v3`, `X_test`, `y_tes
 
 ```python
 !wget -q -O export_analytics.py https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/analytics/export_analytics.py
-import export_analytics
+import importlib, export_analytics
+importlib.reload(export_analytics)   # re-reads the file just downloaded, even if it was imported before
 
 export_analytics.export_analytics(
     model=best_model_v3,

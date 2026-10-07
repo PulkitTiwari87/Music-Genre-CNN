@@ -4,7 +4,8 @@ Run this in the Colab notebook AFTER the CNN V3 evaluation cells (so `best_model
 `X_test`, `y_test_cat`, `train_df`, `val_df`, `test_df` and `label_encoder` exist):
 
     !wget -q -O export_analytics.py https://raw.githubusercontent.com/PulkitTiwari87/Music-Genre-CNN/main/analytics/export_analytics.py
-    import export_analytics
+    import importlib, export_analytics
+    importlib.reload(export_analytics)   # picks up a re-downloaded file in the same runtime
     export_analytics.export_analytics(
         model=best_model_v3,
         X_test=X_test,
