@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Music Genre Classification — brag film</title>
+    <script src="assets/gsap.min.js"></script>
+    <script src="assets/film-data.js"></script>
+    <script src="assets/audio-data.js"></script>
+    <style>
+      @font-face {
+        font-family: "Bahn";
+        src: url("assets/fonts/bahnschrift.ttf") format("truetype");
+        font-weight: 100 900;
+        font-stretch: 75% 100%;
+      }
+      @font-face {
+        font-family: "Cons";
+        src: url("assets/fonts/consola.ttf") format("truetype");
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #05040b;
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #05040b;
+        color: #f4f2fc;
+        font-family: "Bahn", sans-serif;
+      }
+
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---- always-on backdrop (the glow breathes with the music) ---- */
+      #glow {
+        position: absolute;
+        inset: -120px;
+        background: radial-gradient(52% 46% at 50% 62%, rgba(143, 120, 255, 0.3), rgba(143, 120, 255, 0) 70%),
+          radial-gradient(30% 28% at 82% 18%, rgba(255, 180, 90, 0.08), rgba(255, 180, 90, 0) 70%);
+        opacity: 0.6;
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(120% 100% at 50% 46%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.62) 100%);
+      }
+
+      /* ---- type ---- */
+      .kicker {
+        position: absolute;
+        left: 96px;
+        top: 66px;
+        font: 400 27px/1 "Cons", monospace;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #8f78ff;
+      }
+      .kicker b {
+        display: inline-block;
+        margin-right: 20px;
+        padding: 6px 12px;
+        border: 2px solid rgba(143, 120, 255, 0.5);
+        border-radius: 8px;
+        font-weight: 400;
+      }
+      .mono {
+        font: 400 28px/1.3 "Cons", monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #a09bbb;
+      }
+      .mega {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-weight: 800;
+        font-size: 205px;
+        line-height: 0.92;
+        letter-spacing: -0.045em;
+        text-transform: uppercase;
+      }
+      .acc {
+        color: #8f78ff;
+      }
+      .warm {
+        color: #ffb45a;
+      }
+
+      /* ---- scene 1 ---- */
+      #spectrum {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+      #s1-a,
+      #s1-b {
+        top: 176px;
+      }
+
+      /* ---- scene 2 ---- */
+      #s2-stage {
+        position: absolute;
+        left: 160px;
+        top: 190px;
+        width: 1600px;
+        height: 480px;
+      }
+      #wave,
+      #spec {
+        position: absolute;
+        inset: 0;
+      }
+      #wave-draw,
+      #wave-hot-wrap {
+        position: absolute;
+        inset: 0;
+      }
+      #wave svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #bracket {
+        position: absolute;
+        left: 0;
+        top: -14px;
+        width: 160px;
+        height: 508px;
+        border: 3px dashed #ffb45a;
+        border-radius: 10px;
+      }
+      #spec-clip {
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      #spec img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+      }
+      #scan {
+        position: absolute;
+        top: -10px;
+        bottom: -10px;
+        left: 0;
+        width: 5px;
+        background: #ffffff;
+        box-shadow: 0 0 44px 8px #8f78ff;
+      }
+      #s2-label-a,
+      #s2-label-b,
+      #s2-bracket-label,
+      #s2-tag {
+        position: absolute;
+      }
+      #s2-label-a,
+      #s2-label-b {
+        left: 160px;
+        top: 712px;
+      }
+      #s2-bracket-label {
+        left: 160px;
+        top: 756px;
+        color: #ffb45a;
+      }
+      #s2-tag {
+        right: 160px;
+        top: 712px;
+        color: #fcfdbf;
+      }
+      #s2-hero {
+        top: 790px;
+        font-size: 150px;
+      }
+
+      /* ---- scene 3 ---- */
+      #inp {
+        position: absolute;
+        left: 150px;
+        top: 330px;
+        width: 260px;
+      }
+      #inp img {
+        display: block;
+        width: 260px;
+        height: 256px;
+        border-radius: 12px;
+      }
+      #inp .mono {
+        margin-top: 18px;
+        font-size: 22px;
+      }
+      #slabs {
+        position: absolute;
+        left: 440px;
+        top: 250px;
+        width: 790px;
+        height: 560px;
+      }
+      .col {
+        position: absolute;
+        top: 0;
+        height: 560px;
+        width: 196px;
+      }
+      .col .stack {
+        position: absolute;
+        left: 0;
+        bottom: 190px;
+      }
+      .col .stack i {
+        position: absolute;
+        border: 2px solid #b8a8ff;
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(143, 120, 255, 0.28), rgba(143, 120, 255, 0.08));
+        box-shadow: 0 0 26px rgba(143, 120, 255, 0.35);
+      }
+      .col h3 {
+        position: absolute;
+        left: 0;
+        bottom: 118px;
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        text-transform: uppercase;
+      }
+      .col .mono {
+        position: absolute;
+        left: 0;
+        font-size: 21px;
+        letter-spacing: 0.08em;
+      }
+      .col .f {
+        bottom: 80px;
+        color: #fcfdbf;
+      }
+      .col .s {
+        bottom: 46px;
+      }
+      .arrow {
+        position: absolute;
+        top: 372px;
+        font: 400 46px/1 "Cons", monospace;
+        color: #8f78ff;
+      }
+      #right {
+        position: absolute;
+        left: 1250px;
+        top: 190px;
+        width: 560px;
+      }
+      #verdict {
+        height: 230px;
+      }
+      #v-word {
+        font-size: 190px;
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.045em;
+        text-transform: uppercase;
+      }
+      #v-pct {
+        margin-top: 14px;
+        font-size: 50px;
+        font-weight: 700;
+        color: #fcfdbf;
+      }
+      #bars {
+        margin-top: 24px;
+        list-style: none;
+      }
+      #bars li {
+        display: grid;
+        grid-template-columns: 158px 1fr 104px;
+        align-items: center;
+        gap: 16px;
+        height: 47px;
+        font: 400 26px/1 "Cons", monospace;
+        letter-spacing: 0.08em;
+        color: #a09bbb;
+      }
+      #bars li.top {
+        color: #f4f2fc;
+        font-weight: 700;
+      }
+      #bars .track {
+        display: block;
+        height: 20px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.07);
+        overflow: hidden;
+      }
+      #bars .fill {
+        display: block;
+        width: 100%;
+        height: 100%;
+        transform-origin: left center;
+        border-radius: 5px;
+      }
+      #bars em {
+        font-style: normal;
+        text-align: right;
+      }
+
+      /* ---- scene 4 ---- */
+      #acc {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 215px;
+        text-align: center;
+      }
+      #acc-num {
+        font-size: 470px;
+        line-height: 0.9;
+        font-weight: 800;
+        letter-spacing: -0.06em;
+        color: #fcfdbf;
+        background: linear-gradient(180deg, #f4f2fc 25%, #8f78ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      #acc-cap {
+        margin: 26px auto 0;
+        width: 840px;
+        font-size: 48px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #f4f2fc;
+      }
+      #acc-sub {
+        margin-top: 18px;
+      }
+      #roc {
+        position: absolute;
+        left: 990px;
+        top: 150px;
+        width: 840px;
+        height: 700px;
+      }
+      #roc svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #roc-frame,
+      #roc-curves {
+        position: absolute;
+        inset: 0;
+      }
+      .pill {
+        position: absolute;
+        left: 150px;
+        display: flex;
+        align-items: baseline;
+        gap: 22px;
+        padding: 14px 30px;
+        border: 2px solid rgba(143, 120, 255, 0.55);
+        border-radius: 999px;
+        background: rgba(143, 120, 255, 0.12);
+      }
+      .pill span {
+        font: 400 26px/1 "Cons", monospace;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #a09bbb;
+      }
+      .pill b {
+        font-size: 64px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #fcfdbf;
+      }
+      #pill1 {
+        top: 730px;
+      }
+      #pill2 {
+        top: 850px;
+      }
+
+      /* ---- scene 5 ---- */
+      #h1 {
+        top: 210px;
+        font-size: 215px;
+      }
+      #h2 {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 664px;
+        text-align: center;
+        font-size: 82px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #ffb45a;
+      }
+      #h3 {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 790px;
+        text-align: center;
+      }
+      #title {
+        top: 190px;
+        font-size: 190px;
+      }
+      #chips {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 640px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        padding: 0 110px;
+        list-style: none;
+      }
+      #chips li {
+        padding: 12px 22px;
+        border: 2px solid rgba(143, 120, 255, 0.55);
+        border-radius: 999px;
+        background: rgba(143, 120, 255, 0.14);
+        font: 400 26px/1 "Cons", monospace;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+      #tagline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 810px;
+        text-align: center;
+        font-size: 78px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fcfdbf;
+      }
+      #fade {
+        position: absolute;
+        inset: 0;
+        background: #05040b;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="23" data-width="1920" data-height="1080">
+      <div id="glow"></div>
+      <div id="vignette"></div>
+
+      <!-- ===== Scene 1: the hook ===== -->
+      <section id="s1" class="clip" data-start="0" data-duration="4.39" data-track-index="1">
+        <canvas id="spectrum" width="1920" height="1080"></canvas>
+        <p class="kicker" id="s1-kicker"><b>01</b>The question</p>
+        <h1 class="mega" id="s1-a">Music is<br /><span class="acc">structure.</span></h1>
+        <h1 class="mega" id="s1-b">Can a machine<br />learn <span class="acc">it?</span></h1>
+      </section>
+
+      <!-- ===== Scene 2: sound becomes a picture ===== -->
+      <section id="s2" class="clip" data-start="4.39" data-duration="4.9" data-track-index="2">
+        <p class="kicker"><b>02</b>Sound becomes a picture</p>
+        <div id="s2-stage">
+          <div id="wave">
+            <div id="wave-draw">
+              <svg id="wave-svg" viewBox="0 0 1600 480" preserveAspectRatio="none" aria-label="Waveform of a real 30 second test song"></svg>
+            </div>
+            <div id="wave-hot-wrap">
+              <svg id="wave-hot" viewBox="0 0 1600 480" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div id="bracket"></div>
+          </div>
+          <div id="spec">
+            <div id="spec-clip"><img src="assets/mel.png" alt="The real Mel spectrogram of the same song, the exact model input" /></div>
+            <div id="scan"></div>
+          </div>
+        </div>
+        <p class="mono" id="s2-label-a">Audio · 30 s · 22,050 Hz · <span id="s2-file"></span></p>
+        <p class="mono" id="s2-bracket-label">First 3 seconds → 1 training example</p>
+        <p class="mono" id="s2-label-b">Mel spectrogram · 128 bands × 130 frames</p>
+        <p class="mono" id="s2-tag">128 × 130 × 1</p>
+        <h2 class="mega" id="s2-hero">It reads the <span class="acc">picture.</span></h2>
+      </section>
+
+      <!-- ===== Scene 3: the model ===== -->
+      <section id="s3" class="clip" data-start="9.29" data-duration="3.82" data-track-index="3">
+        <p class="kicker"><b>03</b>Four convolution blocks · <span id="s3-params"></span> parameters</p>
+        <div id="inp">
+          <img src="assets/mel.png" alt="Model input: the Mel spectrogram" />
+          <p class="mono">Input<br />128 × 130 × 1</p>
+        </div>
+        <div id="slabs"></div>
+        <div id="right">
+          <div id="verdict">
+            <p id="v-word"></p>
+            <p id="v-pct"></p>
+          </div>
+          <ul id="bars"></ul>
+        </div>
+      </section>
+
+      <!-- ===== Scene 4: the evidence ===== -->
+      <section id="s4" class="clip" data-start="13.11" data-duration="4.91" data-track-index="4">
+        <p class="kicker"><b>04</b>The evidence</p>
+        <div id="acc">
+          <p id="acc-num">0.0%</p>
+          <p id="acc-cap">of unseen songs placed in the right genre</p>
+          <p class="mono" id="acc-sub"></p>
+        </div>
+        <div id="roc">
+          <div id="roc-frame"></div>
+          <div id="roc-curves"></div>
+        </div>
+        <div class="pill" id="pill1"><span>ROC-AUC</span><b id="pill1-v"></b></div>
+        <div class="pill" id="pill2"><span>PR-AUC</span><b id="pill2-v"></b></div>
+      </section>
+
+      <!-- ===== Scene 5: honest, then the title ===== -->
+      <section id="s5" class="clip" data-start="18.02" data-duration="4.98" data-track-index="5">
+        <p class="kicker" id="s5-kicker"><b>05</b>The honest part</p>
+        <h2 class="mega" id="h1"><span id="h1-a"></span><br />were <span class="warm">wrong.</span></h2>
+        <p id="h2"></p>
+        <p class="mono" id="h3"></p>
+        <h1 class="mega" id="title">Music genre<br /><span class="acc">classification</span></h1>
+        <ul id="chips" aria-label="Technology stack">
+          <li>TensorFlow</li>
+          <li>Keras</li>
+          <li>librosa</li>
+          <li>scikit-learn</li>
+          <li>FastAPI</li>
+          <li>React</li>
+          <li>TypeScript</li>
+          <li>Vite</li>
+        </ul>
+        <p id="tagline">Built, not just trained.</p>
+      </section>
+
+      <div id="fade"></div>
+
+      <!-- ===== Audio ===== -->
+      <audio
+        id="music"
+        src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="23"
+        data-track-index="10"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.6,"v":0.5},{"t":21.8,"v":0.5},{"t":23,"v":0}]}]}'
+      ></audio>
+      <audio id="sfx-q" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="2.19" data-duration="0.18" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="sfx-cut1" src="assets/sfx/impact/impactSoft_medium_004.ogg" data-start="4.39" data-duration="0.14" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="sfx-wipe" src="assets/sfx/casino/card-slide-1.ogg" data-start="6.56" data-duration="0.6" data-track-index="12" data-volume="0.4"></audio>
+      <audio id="sfx-tag" src="assets/sfx/interface/bong_001.ogg" data-start="8.74" data-duration="0.12" data-track-index="12" data-volume="0.35"></audio>
+      <audio id="sfx-cut2" src="assets/sfx/impact/impactSoft_medium_004.ogg" data-start="9.29" data-duration="0.14" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="sfx-c1" src="assets/sfx/interface/ui-click2.ogg" data-start="9.83" data-duration="0.06" data-track-index="13" data-volume="0.6"></audio>
+      <audio id="sfx-c2" src="assets/sfx/interface/ui-click2.ogg" data-start="10.37" data-duration="0.06" data-track-index="13" data-volume="0.6"></audio>
+      <audio id="sfx-c3" src="assets/sfx/interface/ui-click2.ogg" data-start="10.93" data-duration="0.06" data-track-index="13" data-volume="0.6"></audio>
+      <audio id="sfx-c4" src="assets/sfx/interface/ui-click2.ogg" data-start="11.46" data-duration="0.06" data-track-index="13" data-volume="0.6"></audio>
+      <audio id="sfx-bell1" src="assets/sfx/impact/impactBell_heavy_000.ogg" data-start="12.02" data-duration="1.4" data-track-index="14" data-volume="0.45"></audio>
+      <audio id="sfx-slam" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="13.11" data-duration="0.18" data-track-index="11" data-volume="0.8"></audio>
+      <audio id="sfx-roc" src="assets/sfx/casino/card-slide-1.ogg" data-start="15.29" data-duration="0.6" data-track-index="12" data-volume="0.35"></audio>
+      <audio id="sfx-p1" src="assets/sfx/interface/ui-click2.ogg" data-start="16.38" data-duration="0.06" data-track-index="13" data-volume="0.5"></audio>
+      <audio id="sfx-p2" src="assets/sfx/interface/ui-click2.ogg" data-start="16.93" data-duration="0.06" data-track-index="13" data-volume="0.5"></audio>
+      <audio id="sfx-honest" src="assets/sfx/impact/impactSoft_medium_004.ogg" data-start="18.02" data-duration="0.14" data-track-index="11" data-volume="0.7"></audio>
+      <audio id="sfx-bell2" src="assets/sfx/impact/impactBell_heavy_000.ogg" data-start="20.19" data-duration="1.48" data-track-index="14" data-volume="0.8"></audio>
+    </div>
+
+    <script>
+      /* All numbers come from assets/film-data.js (generated from the project's own files). */
+      const F = window.FILM;
+      const A = window.AUDIO;
+      const GENRE = { blues: "#5b9cff", classical: "#b794ff", country: "#f5a623", disco: "#ff5fa2", hiphop: "#a3e635", jazz: "#22d3c5", metal: "#94a3b8", pop: "#facc15", reggae: "#22c55e", rock: "#ef4444" };
+      const name = (g) => (g === "hiphop" ? "HIP-HOP" : g.toUpperCase());
+      const NS = "http://www.w3.org/2000/svg";
+      const $ = (id) => document.getElementById(id);
+      const lerp = (a, b, t) => a + (b - a) * t;
+      const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+      /* ---------- static text from data ---------- */
+      $("s2-file").textContent = F.file;
+      $("s3-params").textContent = F.params.toLocaleString("en-US");
+      $("v-word").textContent = name(F.predicted);
+      $("v-word").style.color = GENRE[F.predicted];
+      $("v-pct").textContent = "a song it never heard";
+      $("acc-sub").textContent = Math.round(F.song_accuracy * F.test_songs) + " of " + F.test_songs + " held-out songs";
+      $("pill1-v").textContent = F.roc.macro_auc.toFixed(3);
+      $("pill2-v").textContent = F.pr_macro_ap.toFixed(3);
+      $("h1-a").textContent = F.n_errors + " of " + F.test_songs;
+      $("h2").textContent = name(F.worst_class).charAt(0) + name(F.worst_class).slice(1).toLowerCase() + " gets lost: " + F.worst_class_errors + " of " + F.worst_class_total + ".";
+      $("h3").textContent =
+        name(F.worst_class) +
+        " → " +
+        Object.entries(F.worst_row)
+          .sort((a, b) => b[1] - a[1])
+          .map(([g, n]) => name(g) + (n > 1 ? " ×" + n : ""))
+          .join(" · ");
+
+      /* ---------- scene 2: waveform from the real 30 s envelope ---------- */
+      (function buildWave() {
+        const n = F.wave.min.length;
+        const peak = Math.max(...F.wave.max, ...F.wave.min.map(Math.abs));
+        const seg = (from, to) => {
+          let d = "";
+          for (let i = from; i < to; i += 2) {
+            const x = ((i + 1) / n) * 1600;
+            const hi = Math.max(F.wave.max[i], F.wave.max[i + 1] ?? 0);
+            const lo = Math.min(F.wave.min[i], F.wave.min[i + 1] ?? 0);
+            d += "M" + x.toFixed(1) + " " + (240 - (hi / peak) * 215).toFixed(1) + "L" + x.toFixed(1) + " " + (240 - (lo / peak) * 215).toFixed(1);
+          }
+          return d;
+        };
+        const mk = (svg, d, color, op) => {
+          const p = document.createElementNS(NS, "path");
+          p.setAttribute("d", d);
+          p.setAttribute("stroke", color);
+          p.setAttribute("stroke-width", "4.4");
+          p.setAttribute("stroke-linecap", "round");
+          p.setAttribute("fill", "none");
+          p.setAttribute("opacity", op);
+          svg.appendChild(p);
+        };
+        mk($("wave-svg"), seg(0, n), "#8f78ff", "0.95");
+        mk($("wave-hot"), seg(0, Math.round(n * 0.1)), "#ffb45a", "1");
+      })();
+
+      /* ---------- scene 3: conv slabs + real probabilities ---------- */
+      (function buildModel() {
+        const host = $("slabs");
+        F.blocks.forEach((b, i) => {
+          const col = document.createElement("div");
+          col.className = "col";
+          col.id = "col" + i;
+          col.style.left = i * 196 + "px";
+          const w = (1.2 + 4.8 * Math.sqrt(b.w / 130)) * 27;
+          const h = (1.2 + 9 * Math.sqrt(b.h / 128)) * 27;
+          const plates = Math.max(1, Math.min(8, Math.round(Math.log2(b.filters))));
+          const stack = document.createElement("div");
+          stack.className = "stack";
+          stack.style.width = w + plates * 10 + "px";
+          stack.style.height = h + plates * 7 + "px";
+          for (let k = 0; k < plates; k++) {
+            const p = document.createElement("i");
+            p.style.cssText = "width:" + w + "px;height:" + h + "px;left:" + k * 10 + "px;bottom:" + k * 7 + "px;opacity:" + (0.5 + (0.5 * k) / plates);
+            stack.appendChild(p);
+          }
+          col.appendChild(stack);
+          col.insertAdjacentHTML("beforeend", "<h3>Conv " + (i + 1) + '</h3><p class="mono f">' + b.filters + ' filters</p><p class="mono s">' + b.h + " × " + b.w + "</p>");
+          host.appendChild(col);
+          if (i < F.blocks.length - 1) {
+            const a = document.createElement("span");
+            a.className = "arrow";
+            a.id = "arr" + i;
+            a.textContent = "→";
+            a.style.left = i * 196 + 154 + "px";
+            host.appendChild(a);
+          }
+        });
+        const order = F.classes.map((g, i) => ({ g, p: F.probabilities[i] })).sort((x, y) => y.p - x.p);
+        $("bars").innerHTML = order
+          .map(
+            (o, i) =>
+              '<li class="' + (i === 0 ? "top" : "") + '" id="bar' + i + '"><span>' + name(o.g) + '</span><span class="track"><span class="fill" style="background:' + GENRE[o.g] + '"></span></span><em>' + (o.p * 100).toFixed(1) + "%</em></li>",
+          )
+          .join("");
+        order.forEach((o, i) => ($("bar" + i).querySelector(".fill").dataset.p = o.p));
+      })();
+
+      /* ---------- scene 4: real ROC curves ---------- */
+      (function buildRoc() {
+        const W = 840, H = 700, l = 78, r = 20, t = 20, b = 78;
+        const px = (x) => l + x * (W - l - r);
+        const py = (y) => t + (1 - y) * (H - t - b);
+        const path = (c) => c.x.map((x, i) => (i ? "L" : "M") + px(x).toFixed(1) + " " + py(c.y[i]).toFixed(1)).join("");
+        let g = "";
+        [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
+          g += '<line x1="' + px(0) + '" x2="' + px(1) + '" y1="' + py(v) + '" y2="' + py(v) + '" stroke="#26223d" stroke-width="2"/><line x1="' + px(v) + '" x2="' + px(v) + '" y1="' + py(0) + '" y2="' + py(1) + '" stroke="#26223d" stroke-width="2"/>';
+          g += '<text x="' + (px(0) - 12) + '" y="' + (py(v) + 7) + '" text-anchor="end" fill="#a09bbb" font-family="Cons" font-size="22">' + v + '</text><text x="' + px(v) + '" y="' + (py(0) + 32) + '" text-anchor="middle" fill="#a09bbb" font-family="Cons" font-size="22">' + v + "</text>";
+        });
+        g += '<line x1="' + px(0) + '" y1="' + py(0) + '" x2="' + px(1) + '" y2="' + py(1) + '" stroke="#4a4568" stroke-width="3" stroke-dasharray="10 10"/>';
+        g += '<text x="' + px(0.5) + '" y="' + (H - 12) + '" text-anchor="middle" fill="#a09bbb" font-family="Cons" font-size="23" letter-spacing="2">FALSE ALARMS</text>';
+        g += '<text transform="translate(26 ' + py(0.5) + ') rotate(-90)" text-anchor="middle" fill="#a09bbb" font-family="Cons" font-size="23" letter-spacing="2">SONGS CAUGHT</text>';
+        $("roc-frame").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" aria-hidden="true">' + g + "</svg>";
+        let c = "";
+        F.classes.forEach((cl) => (c += '<path d="' + path(F.roc.classes[cl]) + '" fill="none" stroke="' + GENRE[cl] + '" stroke-width="4" opacity="0.72" stroke-linejoin="round"/>'));
+        c += '<path d="' + path(F.roc.micro) + '" fill="none" stroke="#fcfdbf" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>';
+        $("roc-curves").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" aria-label="Real song-level ROC curves, one per genre plus the pooled curve">' + c + "</svg>";
+      })();
+
+      /* ---------- per-frame canvas (hook spectrum) + music-reactive glow ---------- */
+      const SP = F.spectrum; // [frame][64 bars], real Mel values
+      const ctx = $("spectrum").getContext("2d");
+      const lvl = (t) => (t < 2.0 ? 0.05 : t < 2.9 ? 0.05 + 0.55 * ease((t - 2.0) / 0.9) : 0.6 + 0.4 * ease(Math.min(1, (t - 2.9) / 1.3)));
+      function drawSpectrum(t) {
+        const w = 1920, h = 1080, bars = 64, centre = 930, reach = 470;
+        ctx.clearRect(0, 0, w, h);
+        const col = (t * F.fps) % SP.length;
+        const c0 = Math.floor(col), c1 = (c0 + 1) % SP.length, fr = col - c0;
+        const L = lvl(t);
+        for (let i = 0; i < bars; i++) {
+          const v = lerp(SP[c0][i], SP[c1][i], fr) / 255;
+          const height = 3 + v * reach * L;
+          const x = (i + 0.5) * (w / bars);
+          const warm = Math.min(1, v * 1.5);
+          const rgb = Math.round(lerp(143, 255, warm)) + "," + Math.round(lerp(120, 196, warm)) + "," + Math.round(lerp(255, 130, warm));
+          ctx.fillStyle = "rgba(" + rgb + "," + (0.38 + 0.62 * Math.min(1, v * 1.6)) + ")";
+          ctx.fillRect(x - 7, centre - height, 14, height);
+          ctx.fillStyle = "rgba(" + rgb + ",0.16)";
+          ctx.fillRect(x - 7, centre + 5, 14, height * 0.5);
+        }
+        const fade = ctx.createLinearGradient(0, centre - reach, 0, centre - reach * 0.25);
+        fade.addColorStop(0, "rgba(0,0,0,0.92)");
+        fade.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, centre - reach - 6, w, reach * 0.75 + 6);
+        ctx.globalCompositeOperation = "source-over";
+      }
+      function glow(t) {
+        const f = A.frames[Math.min(A.frames.length - 1, Math.round(t * A.fps))];
+        const bass = (f[0] + f[1]) / 2;
+        const g = $("glow");
+        g.style.opacity = (0.5 + 0.5 * bass).toFixed(3);
+        g.style.transform = "scale(" + (1 + 0.05 * bass).toFixed(4) + ")";
+      }
+
+      /* ====================== the timeline ====================== */
+      const tl = gsap.timeline({ paused: true });
+      const S = { t: 0 };
+      tl.to(
+        S,
+        {
+          t: 23,
+          duration: 23,
+          ease: "none",
+          onUpdate: () => {
+            drawSpectrum(S.t);
+            glow(S.t);
+          },
+        },
+        0,
+      );
+
+      /* Scene 1 — hook */
+      tl.fromTo("#s1-kicker", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 0.4);
+      tl.fromTo("#s1-a", { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 0.15);
+      tl.to("#s1-a", { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, 1.85);
+      tl.fromTo("#s1-b", { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 2.19); // beat-locked: 2.19s
+      tl.to("#s1-b", { scale: 1.035, duration: 2.0, ease: "none" }, 2.9);
+
+      /* Scene 2 — sound becomes a picture */
+      tl.fromTo("#s2 .kicker", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.44);
+      tl.fromTo("#wave-draw", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.6, ease: "power2.out" }, 4.5);
+      tl.fromTo("#s2-label-a", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4 }, 4.55);
+      tl.fromTo("#wave-hot-wrap", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.0);
+      tl.fromTo("#bracket", { opacity: 0, scaleX: 0.6, transformOrigin: "left center" }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "power2.out" }, 5.0);
+      tl.fromTo("#s2-bracket-label", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4 }, 5.05);
+      tl.to(["#s2-bracket-label", "#s2-label-a"], { opacity: 0, duration: 0.25 }, 6.15);
+      tl.to("#wave", { opacity: 0, scaleY: 0.06, transformOrigin: "50% 50%", duration: 0.3, ease: "power2.in" }, 6.26);
+      tl.fromTo("#spec-clip", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.08, ease: "power1.inOut" }, 6.56); // beat-grid: 6.56 → 7.64
+      tl.fromTo("#scan", { x: 0, opacity: 1 }, { x: 1600, duration: 1.08, ease: "power1.inOut" }, 6.56);
+      tl.to("#scan", { opacity: 0, duration: 0.2 }, 7.5);
+      tl.fromTo("#s2-label-b", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4 }, 6.9);
+      tl.fromTo("#s2-hero", { opacity: 0, y: 40, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 7.64); // beat-grid: 7.64
+      tl.fromTo("#s2-tag", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4 }, 8.19);
+      tl.fromTo("#s2-stage", { scale: 1 }, { scale: 1.03, transformOrigin: "50% 50%", duration: 0.35, ease: "power2.out" }, 8.74); // beat-locked: 8.74s
+      tl.to("#s2-stage", { scale: 1.02, duration: 0.5, ease: "power1.inOut" }, 9.09);
+
+      /* Scene 3 — the model */
+      tl.fromTo("#s3 .kicker", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 9.34);
+      tl.fromTo("#inp", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 9.34);
+      const conv = [9.83, 10.37, 10.93, 11.46]; // beat-grid: one block per beat (10.93 is a strong cue)
+      conv.forEach((t0, i) => {
+        tl.fromTo("#col" + i, { opacity: 0, scale: 0.7, transformOrigin: "50% 100%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, t0);
+        if (i < conv.length - 1) tl.fromTo("#arr" + i, { opacity: 0 }, { opacity: 1, duration: 0.3 }, t0 + 0.25);
+      });
+      tl.fromTo("#bars li", { opacity: 0 }, { opacity: 1, duration: 0.25, stagger: 0.035 }, 11.46);
+      document.querySelectorAll("#bars .fill").forEach((el, i) => {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: Math.max(0.004, +el.dataset.p), duration: 0.5, ease: "power3.out" }, 11.46 + i * 0.035);
+      });
+      tl.fromTo("#verdict", { opacity: 0, scale: 1.3, transformOrigin: "left center" }, { opacity: 1, scale: 1, duration: 0.45, ease: "expo.out" }, 12.02); // beat-grid: 12.02
+
+      /* Scene 4 — the evidence */
+      const P = { v: 0 };
+      tl.fromTo("#s4 .kicker", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 13.16);
+      tl.fromTo("#acc-num", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" }, 13.11); // beat-locked: 13.11s
+      tl.to(P, { v: F.song_accuracy * 100, duration: 0.8, ease: "power2.out", onUpdate: () => ($("acc-num").textContent = P.v.toFixed(1) + "%") }, 13.11);
+      tl.fromTo("#acc-cap", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, 13.5);
+      tl.fromTo("#acc-sub", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 14.0);
+      // the number shrinks to the left column; the caption keeps its size and slides up under it
+      tl.to("#acc-num", { x: -520, scale: 0.52, transformOrigin: "50% 0%", duration: 0.6, ease: "power3.inOut" }, 15.29); // beat-grid: 15.29
+      tl.to(["#acc-cap", "#acc-sub"], { x: -520, y: -205, duration: 0.6, ease: "power3.inOut" }, 15.29);
+      tl.fromTo("#roc", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 15.6);
+      tl.fromTo("#roc-curves", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.15, ease: "power1.inOut" }, 15.75);
+      tl.fromTo("#pill1", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 16.38); // beat-grid: 16.38
+      tl.fromTo("#pill2", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 16.93); // beat-grid: 16.93
+
+      /* Scene 5 — honest, then the title */
+      tl.fromTo("#s5-kicker", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 18.07);
+      tl.fromTo("#h1", { opacity: 0, y: 50, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, 18.02);
+      tl.fromTo("#h2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 18.56); // beat-locked: 18.56s
+      tl.fromTo("#h3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 19.0);
+      tl.to(["#h1", "#h2", "#h3", "#s5-kicker"], { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, 19.9);
+      tl.fromTo("#title", { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 0.7, ease: "expo.out" }, 20.19); // beat-grid: 20.19
+      tl.fromTo("#chips li", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, ease: "power3.out" }, 20.75);
+      tl.fromTo("#tagline", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 21.28);
+      tl.to("#fade", { opacity: 1, duration: 0.5, ease: "power1.in" }, 22.5);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,2 @@
+Music Genre Classification.
+A CNN that learned to read spectrograms: 90.0% of songs it had never heard placed in the right genre, plus an honest look at the 15 it got wrong.
