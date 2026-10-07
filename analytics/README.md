@@ -54,11 +54,15 @@ Save the download as `frontend/public/analytics/eval.json`, commit and push.
 
 Safety checks inside the exporter, before anything is written:
 
-1. The model's segment accuracy on `X_test` must equal the recorded `0.8325550556182861`. If the
-   notebook was re-run and the file order (and therefore the split) changed, it stops: curves from a
-   split the model trained on would be inflated.
-2. The test features re-extracted from the audio must equal `X_test`, so every segment is tied to
-   the right song.
+1. **Split identity.** `test_df` must start with the five songs the notebook printed in cell 116
+   (`disco.00082`, `pop.00050`, `rock.00061`, `metal.00073`, `jazz.00094`). If the notebook was re-run and the file
+   order, and therefore the split, changed, it stops: curves from songs the model trained on would be inflated.
+2. **Numerics.** The model's segment accuracy on `X_test` must match the recorded `0.8325550556182861` to within
+   5 segments. A newer Colab (different librosa/TensorFlow/Keras) can flip a borderline segment; a drift of up to 5
+   is accepted and recorded in `split_check` (and shown on the page), anything larger means the wrong model or
+   features and the export stops.
+3. The test features re-extracted from the audio must equal `X_test`, so every segment is tied to the
+   right song.
 
 What it computes, all from the model's predicted probabilities and the real audio:
 

@@ -206,6 +206,103 @@ def test_refuses_to_export_when_the_split_is_not_the_evaluated_one(
     assert not (tmp_path / "x.json").exists()
 
 
+def _run(dataset, stub_model, tmp_path, **kwargs):
+    frames, X_test, y_onehot = dataset
+    return ex.export_analytics(
+        stub_model,
+        X_test,
+        y_onehot,
+        frames["train"],
+        frames["val"],
+        frames["test"],
+        list(GENRES),
+        out_path=str(tmp_path / "out.json"),
+        log=lambda *_: None,
+        **kwargs,
+    )
+
+
+def test_one_flipped_segment_is_tolerated_and_recorded(
+    dataset, stub_model, tmp_path, exported
+):
+    n = exported["segment"]["n"]
+    recorded = (
+        exported["segment"]["accuracy"] + 1 / n
+    )  # as if one more segment had been right originally
+    result = _run(
+        dataset,
+        stub_model,
+        tmp_path,
+        expected_segment_accuracy=recorded,
+        expected_first_files=None,
+    )
+    check = result["split_check"]
+    assert check["matches"] is True and check["exact"] is False
+    assert (
+        check["delta_segments"] == -1
+        and check["max_drift_segments"] == ex.MAX_DRIFT_SEGMENTS
+    )
+
+
+def test_exact_reproduction_is_flagged_exact(dataset, stub_model, tmp_path, exported):
+    recorded = exported["segment"]["accuracy"]
+    result = _run(
+        dataset,
+        stub_model,
+        tmp_path,
+        expected_segment_accuracy=recorded,
+        expected_first_files=None,
+    )
+    assert (
+        result["split_check"]["exact"] is True
+        and result["split_check"]["delta_segments"] == 0
+    )
+
+
+def test_larger_drift_is_refused(dataset, stub_model, tmp_path, exported):
+    n = exported["segment"]["n"]
+    recorded = exported["segment"]["accuracy"] + (ex.MAX_DRIFT_SEGMENTS + 3) / n
+    with pytest.raises(RuntimeError, match="differs from the recorded"):
+        _run(
+            dataset,
+            stub_model,
+            tmp_path,
+            expected_segment_accuracy=recorded,
+            expected_first_files=None,
+        )
+
+
+def test_a_different_song_order_is_refused_even_if_accuracy_matches(
+    dataset, stub_model, tmp_path, exported
+):
+    recorded = exported["segment"]["accuracy"]
+    with pytest.raises(RuntimeError, match="not the split the notebook evaluated"):
+        _run(
+            dataset,
+            stub_model,
+            tmp_path,
+            expected_segment_accuracy=recorded,
+            expected_first_files=("rock.nonexistent.wav",),
+        )
+
+
+def test_the_fingerprint_matches_when_the_split_starts_with_the_recorded_songs(
+    dataset, stub_model, tmp_path, exported
+):
+    frames, _, _ = dataset
+    first = tuple(
+        p.replace("\\", "/").split("/")[-1] for p in frames["test"]["file_path"].head(3)
+    )
+    result = _run(
+        dataset,
+        stub_model,
+        tmp_path,
+        expected_segment_accuracy=exported["segment"]["accuracy"],
+        expected_first_files=first,
+    )
+    assert result["split_check"]["fingerprint_ok"] is True
+
+
 def test_refuses_when_test_df_does_not_match_x_test(dataset, stub_model, tmp_path):
     frames, X_test, y_onehot = dataset
     shuffled = frames["test"].iloc[::-1].reset_index(drop=True)

@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 /** Minimal valid eval.json: only what the ROC panel and metric cards read. */
-function evalFixture(synthetic: boolean) {
+function evalFixture(synthetic: boolean, splitCheck: Record<string, unknown> = {}) {
   const curve = (auc: number) => ({ fpr: [0, 0.2, 1], tpr: [0, 0.8, 1], auc, positives: 15 });
   const pr = (ap: number) => ({ recall: [0, 0.8, 1], precision: [1, 0.9, 0.1], ap, positives: 15, baseline: 0.1 });
   const only = <T,>(a: T, b: T) => Object.fromEntries(CLASSES.map((c, i) => [c, i === 0 ? a : i === 1 ? b : null]));
@@ -52,7 +52,7 @@ function evalFixture(synthetic: boolean) {
   return {
     schema_version: 1,
     provenance: { generator: "test", generated_at: "now", synthetic, source: "unit test", versions: {} },
-    split_check: { segment_accuracy: 0.9, expected: null, n_test_segments: 1, n_test_songs: 1 },
+    split_check: { segment_accuracy: 0.9, expected: null, n_test_segments: 1, n_test_songs: 1, ...splitCheck },
     classes: [...CLASSES],
     segment: block,
     song: block,
@@ -137,6 +137,20 @@ describe("eval.json handling", () => {
     render(<MetricCards />);
     expect(await screen.findByText(/flagged synthetic/i)).toBeInTheDocument();
     expect(screen.queryByText("0.930")).not.toBeInTheDocument();
+  });
+
+  it("discloses numerical drift between the Colab re-run and the original notebook run", async () => {
+    respondWith(evalFixture(false, { exact: false, delta_segments: -1, matches: true, fingerprint_ok: true }));
+    render(<MetricCards />);
+    expect(await screen.findByText(/predicted 1 of 1,499 test segments differently/)).toBeInTheDocument();
+    expect(screen.getByText("0.930")).toBeInTheDocument(); // ROC-AUC is used (export is real)
+  });
+
+  it("stays quiet when the re-run reproduced the original exactly", async () => {
+    respondWith(evalFixture(false, { exact: true, delta_segments: 0 }));
+    render(<MetricCards />);
+    expect(await screen.findByText("0.930")).toBeInTheDocument();
+    expect(screen.queryByText(/differently from the original run/)).not.toBeInTheDocument();
   });
 
   it("always revalidates the export so a replaced or removed file is never served stale", async () => {

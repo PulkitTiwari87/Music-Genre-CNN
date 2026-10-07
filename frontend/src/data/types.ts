@@ -271,6 +271,11 @@ export interface EvalData {
     segment_accuracy: number;
     expected: number | null;
     matches?: boolean;
+    fingerprint_ok?: boolean;
+    /** segments predicted differently from the original notebook run (0 = identical) */
+    delta_segments?: number;
+    exact?: boolean;
+    max_drift_segments?: number;
     n_test_segments: number;
     n_test_songs: number;
   };

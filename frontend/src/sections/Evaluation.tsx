@@ -57,6 +57,13 @@ export function MetricCards() {
         </Stat>
         <Stat label="Test loss" hint="categorical cross-entropy">{fixed(r.test_loss, 4)}</Stat>
       </dl>
+      {ready && ready.split_check.exact === false && (
+        <p className="hint">
+          The Colab re-run predicted {Math.abs(ready.split_check.delta_segments ?? 0)} of {notebook.dataset.segments.test.toLocaleString("en-US")} test
+          segments differently from the original run (newer library versions). ROC, PR and confidence figures come from the re-run; accuracy and the
+          confusion matrices shown here are from the original run.
+        </p>
+      )}
       {!ready && (
         <p className="hint">
           ROC-AUC and PR-AUC show n/a: {state.status === "ready" ? "the loaded eval.json is flagged synthetic, so its numbers are not used here" : "they need the model's probabilities, which only the Colab export can produce"}.

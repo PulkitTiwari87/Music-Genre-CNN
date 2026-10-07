@@ -20,9 +20,13 @@ Then save the downloaded file as frontend/public/analytics/eval.json and commit 
 
 Nothing here is estimated: every number is computed from the model's predicted
 probabilities on the real test set, or from the real audio files. Before writing anything
-the function checks that the test split is the one the model was evaluated on
-(segment accuracy must equal the notebook's recorded 0.8325550556182861, and the
-re-extracted features must equal X_test); if not, it stops.
+the function checks that the test split is the one the model was evaluated on:
+  1. test_df must start with the songs the notebook printed (cell 116): same split, same order;
+  2. the segment accuracy must match the recorded 0.8325550556182861 to within
+     MAX_DRIFT_SEGMENTS segments (a newer librosa/TensorFlow can flip a borderline
+     segment; any drift is recorded in `split_check`);
+  3. the re-extracted features must equal X_test.
+If any check fails it stops.
 
 Output schema (version 1), all arrays are plain JSON lists unless noted:
   provenance, split_check, classes
@@ -56,6 +60,18 @@ N_MELS, N_FFT, HOP_LENGTH = 128, 2048, 512
 EXPECTED_SEGMENT_ACCURACY = (
     0.8325550556182861  # recorded by the notebook (cell 152 / final_results.json)
 )
+# First test songs the notebook printed (cell 116, `song_results_df.head()`): a fingerprint of the
+# split AND its file order. It only matches if test_df is the split the model was evaluated on.
+EXPECTED_FIRST_TEST_FILES = (
+    "disco.00082.wav",
+    "pop.00050.wav",
+    "rock.00061.wav",
+    "metal.00073.wav",
+    "jazz.00094.wav",
+)
+# Re-running in a newer Colab (different librosa/TensorFlow/Keras) can flip a borderline segment.
+# A few segments of drift is numerical noise; more means this is not the evaluated model/features.
+MAX_DRIFT_SEGMENTS = 5
 SCHEMA_VERSION = 1
 MAX_ERROR_EXAMPLES = (
     24  # misclassified songs that carry embedded spectrograms (bounds file size)
@@ -286,6 +302,7 @@ def export_analytics(
     provenance=None,
     seed=42,
     expected_segment_accuracy=EXPECTED_SEGMENT_ACCURACY,
+    expected_first_files=EXPECTED_FIRST_TEST_FILES,
     log=print,
 ):
     import os
@@ -311,18 +328,45 @@ def export_analytics(
         "n_test_songs": len(test_df),
     }
     if expected_segment_accuracy is not None:
-        split_check["matches"] = (
-            abs(segment_accuracy - expected_segment_accuracy) < 1e-6
+        # 1) identity: the split (and its order) must be the one the notebook evaluated
+        first_files = [
+            str(p).replace("\\", "/").split("/")[-1]
+            for p in test_df["file_path"].head(len(expected_first_files or ()))
+        ]
+        fingerprint_ok = expected_first_files is None or first_files == list(
+            expected_first_files
         )
-        if not split_check["matches"]:
+        if not fingerprint_ok:
             raise RuntimeError(
-                f"Segment accuracy {segment_accuracy:.6f} != the recorded {expected_segment_accuracy:.6f}. "
+                f"test_df is not the split the notebook evaluated: it starts with {first_files} but the "
+                f"recorded run started with {list(expected_first_files)}. The file order, and so the split, "
+                "differs; curves from songs the model trained on would be inflated. Refusing to export."
+            )
+        # 2) numerics: same model and features should reproduce the accuracy, up to a few flipped segments
+        delta = round((segment_accuracy - expected_segment_accuracy) * len(X_test))
+        split_check.update(
+            fingerprint_ok=True,
+            delta_segments=delta,
+            exact=delta == 0,
+            max_drift_segments=MAX_DRIFT_SEGMENTS,
+        )
+        if abs(delta) > MAX_DRIFT_SEGMENTS:
+            raise RuntimeError(
+                f"Segment accuracy {segment_accuracy:.6f} differs from the recorded "
+                f"{expected_segment_accuracy:.6f} by {delta} segments (allowed: {MAX_DRIFT_SEGMENTS}). "
                 "X_test is not the split this model was evaluated on (or the wrong model is loaded); "
                 "refusing to export curves that would not describe the reported results."
             )
-        log(
-            f"split check OK: accuracy {segment_accuracy:.6f} equals the recorded value"
-        )
+        split_check["matches"] = True
+        if delta == 0:
+            log(
+                f"split check OK: same songs, accuracy {segment_accuracy:.6f} equals the recorded value"
+            )
+        else:
+            log(
+                f"split check OK with numerical drift: same songs, but {abs(delta)} segment(s) predicted "
+                "differently from the original run (library/hardware versions); recorded in split_check."
+            )
 
     # 2. map segments back to songs by re-extracting them, and verify the mapping
     log(f"re-extracting {len(test_df)} test songs ...")
